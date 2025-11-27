@@ -1042,8 +1042,7 @@ local function PlantAccelerator(boolean)
     if boolean then
         Notify("Plant Accelerator Enabled", "Plant Accelerator has been enabled, plants will now grow at extreme speeds.")
         local FarmSeeds_PlantRF = rs:WaitForChild("FarmSeeds_PlantRF")
-        local namecall
-        namecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local namecall; namecall = hookmetamethod(game, "__namecall", function(self, ...)
             local args = {...}
             local method = getnamecallmethod()
             
