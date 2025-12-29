@@ -1,4 +1,4 @@
-{
+return ({
 	["PE"] = function(_, p1, p2, p3)
 		p2[1][31][p3 + 1] = p1
 	end,
@@ -168,7 +168,7 @@
 						if v66 >= 4 then
 							if v66 >= 6 then
 								if v66 < 7 then
-									if v_u_64 then -- false
+									if v_u_64 then
 										for v67, v68 in v_u_64 do
 											if v67 >= 1 then
 												v68[2] = v68
@@ -263,7 +263,7 @@
 											if not v_u_64 then
 												v_u_64 = {}
 											end
-											local v82 = v_u_64[v81] -- empty table or
+											local v82 = v_u_64[v81]
 											if not v82 then
 												v82 = {
 													[2] = v_u_61,
@@ -3776,4 +3776,4 @@
 	["oE"] = function(_, p892, p893, p894)
 		p893[p892] = p892 + p894
 	end
-}
+}):MQ()(...)
