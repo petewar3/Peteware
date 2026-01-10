@@ -8,7 +8,7 @@
 	Max    | Programming
 	Damian | Programming
 	
-	Modified by 584h | Added Controller Support
+	Modified by Peteware | Added Controller Support
 
 ]]
 
@@ -21,7 +21,7 @@ local function getService(name)
 	return if cloneref then cloneref(service) else service
 end
 
-getService('GuiService').AutoSelectGuiEnabled = true
+getService('GuiService').AutoSelectGuiEnabled
 
 -- Loads and executes a function hosted on a remote URL. Cancels the request if the requested URL takes too long to respond.
 -- Errors with the function are caught and logged to the output
@@ -2079,7 +2079,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 
 
-		TabButton.Interact.Activated:Connect(function()
+		TabButton.Interact.MouseButton1Click:Connect(function()
 			if Minimised then return end
 			TweenService:Create(TabButton, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {BackgroundTransparency = 0}):Play()
 			TweenService:Create(TabButton.UIStroke, TweenInfo.new(0.7, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
