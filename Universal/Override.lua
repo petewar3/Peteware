@@ -831,11 +831,11 @@ local events = {
 }
 
 --// Disconnect Script Features
-function DisconnectScript()
+function DisconnectScripts()
     getgenv().Override = nil
     keepPeteware = false
     
-    for event in ipairs(events) do
+    for _, event in ipairs(events) do
         event:Disconnect()
         event = nil
     end
