@@ -710,6 +710,7 @@ function EspInterface.getTeamColor(player)
 	return player.Team and player.Team.TeamColor and player.Team.TeamColor.Color;
 end
 
+-- modified specifcally for lone survival
 function EspInterface.getCharacter(player)
     for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
         if plr_char.Name == player.Name then
