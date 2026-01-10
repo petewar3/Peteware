@@ -196,7 +196,7 @@ end
 
 local lastTargetPartRequest = {}
 
-local function FetchTargetPart(character)
+local function FetchTargetPart(character, possibleTargets)
     if not lastTargetPartRequest[character.Name] then
         lastTargetPartRequest[character.Name] = {
             CurrentPart = nil,
@@ -211,7 +211,10 @@ local function FetchTargetPart(character)
     end
     
     local targetParts = {}
-    if not character then return targetParts end
+    
+    if not character then 
+        return targetParts
+    end
 
     local isR15 = character:FindFirstChild("UpperTorso") ~= nil
     local rigTable = isR15 and characterParts.R15 or characterParts.R6
@@ -219,7 +222,11 @@ local function FetchTargetPart(character)
     for _, selected in ipairs(selectedAimParts) do
         local corePart = character:FindFirstChild(selected)
         if corePart then
-            table.insert(targetParts, corePart)
+            if wallCheck and possibleTargets and possibleTargets[character] and table.find(possibleTargets[character], corePart) then
+                table.insert(targetParts, corePart)
+            elseif not wallCheck then
+                table.insert(targetParts, corePart)
+            end
         end
 
         local mappedParts = rigTable[selected]
@@ -250,6 +257,7 @@ end
 local function FetchPossibleTargets()
     local availablePlayers = {}
     local currentCharacters = {}
+    local possibleTargets = {}
     
     for _, plr in ipairs(players:GetPlayers()) do
         local plr_char = plr.Character
@@ -285,17 +293,45 @@ local function FetchPossibleTargets()
         local plr_humanoid = plr_char:WaitForChild("Humanoid")
             
         if wallCheck then
+            local partsToCheck = {}
+            for _, partName in ipairs(characterParts.Core) do
+                local part = plr_char:FindFirstChild(partName)
+                if part then
+                    table.insert(partsToCheck, part)
+                end
+            end
+
+            local isR15 = plr_char:FindFirstChild("UpperTorso") ~= nil
+            local rigTable = isR15 and characterParts.R15 or characterParts.R6
+            for groupName, names in pairs(rigTable) do
+                for _, name in ipairs(names) do
+                    local part = plr_char:FindFirstChild(name)
+                    if part then
+                        table.insert(partsToCheck, part)
+                    end
+                end
+            end
+
             local params = RaycastParams.new()
             params.FilterType = Enum.RaycastFilterType.Exclude
             params.IgnoreWater = true
             params.FilterDescendantsInstances = currentCharacters
 
-            local direction = plr_hrp.Position - cameraPos
-            local result = workspace:Raycast(cameraPos, direction, params)
-
-            if result then
-                continue
+            local visibleParts = {}
+            for _, part in ipairs(partsToCheck) do
+                local direction = part.Position - cameraPos
+                local result = workspace:Raycast(cameraPos, direction, params)
+                if not result then
+                    table.insert(visibleParts, part)
+                end
             end
+
+            if #visibleParts > 0 then
+                table.insert(availablePlayers, plr)
+                possibleTargets[plr_char] = visibleParts
+            end
+        else
+            table.insert(availablePlayers, plr)
         end
         
         if deadCheck and plr_humanoid.Health <= 0 then
@@ -305,7 +341,7 @@ local function FetchPossibleTargets()
         table.insert(availablePlayers, plr)
     end
     
-    return availablePlayers
+    return availablePlayers, possibleTargets
 end
 
 local FOVCircle = Drawing.new("Circle")
@@ -329,8 +365,10 @@ local function FetchClosestTarget()
     local viewport = camera.ViewportSize
     local screenCenter = Vector2.new(viewport.X / 2, viewport.Y / 2)
     local fovRadius = aimbotFOV
+    
+    local possibleCharacters, possibleTargets = FetchPossibleTargets()
 
-    for _, plr in ipairs(FetchPossibleTargets()) do
+    for _, plr in ipairs(possibleCharacters) do
         local char = plr.Character
         if not char then continue end
 
@@ -349,7 +387,7 @@ local function FetchClosestTarget()
         end
     end
 
-    return closestCharacter
+    return closestCharacter, possibleTargets
 end
 
 local aimbotEnabled = false
@@ -717,7 +755,7 @@ local KeepPetewareToggle = Tab:CreateToggle({
                         game.Loaded:Wait()
                         task.wait(1)
                     end
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/Petewar3/Peteware/refs/heads/main/Universal/Override.lua"))()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Universal/Override.lua"))()
                     ]])
                 end
             end)
@@ -770,9 +808,9 @@ local events = {
     aimbotConnUpdate = runService.RenderStepped:Connect(function()
         UpdateFOVCircle()
         if aimbotEnabled then
-            local targetPlayer = FetchClosestTarget()
-            if targetPlayer then
-                local targetPart = FetchTargetPart(targetPlayer)
+            local targetCharacter, possibleTargets = FetchClosestTarget()
+            if targetCharacter then
+                local targetPart = FetchTargetPart(targetCharacter, possibleTargets)
                 if targetPart then
                     local camCFrame = camera.CFrame
                     local direction = (targetPart.Position - camCFrame.Position).Unit
