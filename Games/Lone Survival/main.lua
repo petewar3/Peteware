@@ -216,7 +216,7 @@ local function FetchTargetPart(character, possibleTargets)
     local targetParts = {}
     
     if not character then 
-        return targetParts
+        return nil
     end
 
     local isR15 = character:FindFirstChild("UpperTorso") ~= nil
@@ -237,7 +237,13 @@ local function FetchTargetPart(character, possibleTargets)
             for _, partName in ipairs(mappedParts) do
                 local part = character:FindFirstChild(partName)
                 if part then
-                    table.insert(targetParts, part)
+                    if wallCheck then
+                        if possibleTargets and possibleTargets[character] and table.find(possibleTargets[character], part) then
+                            table.insert(targetParts, part)
+                        end
+                    else
+                        table.insert(targetParts, part)
+                    end
                 end
             end
         end
@@ -258,7 +264,7 @@ local function FetchTargetPart(character, possibleTargets)
 end
 
 local function FetchPossibleTargets()
-    local availablePlayers = {}
+    local availableCharacters = {}
     local currentCharacters = {}
     local possibleTargets = {}
     
@@ -271,7 +277,13 @@ local function FetchPossibleTargets()
     local cameraPos = camera.CFrame.Position
     
     for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
-        local plr = players:GetPlayerFromCharacter(plr_char)
+        local plr
+        for _, v in ipairs(players:GetPlayers()) do
+            if v.Name == plr_char.Name then
+                plr = v
+                break
+            end
+        end
     
         if not plr or plr == player then
             continue
@@ -325,15 +337,15 @@ local function FetchPossibleTargets()
             end
 
             if #visibleParts > 0 then
-                table.insert(availablePlayers, plr)
+                table.insert(availableCharacters, plr_char)
                 possibleTargets[plr_char] = visibleParts
             end
         else
-            table.insert(availablePlayers, plr)
+            table.insert(availableCharacters, plr_char)
         end
     end
     
-    return availablePlayers, possibleTargets
+    return availableCharacters, possibleTargets
 end
 
 local FOVCircle = Drawing.new("Circle")
@@ -360,22 +372,25 @@ local function FetchClosestTarget()
     
     local possibleCharacters, possibleTargets = FetchPossibleTargets()
 
-    for _, plr in ipairs(possibleCharacters) do
-        local char = plr.Character
-        if not char then continue end
-
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then continue end
+    for _, plr_char in ipairs(possibleCharacters) do
+        local plr_hrp = plr_char:FindFirstChild("HumanoidRootPart")
+        if not plr_hrp then
+            continue
+        end
 
         local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
-        if not onScreen then continue end
+        if not onScreen then 
+            continue 
+        end
 
         local dist = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
-        if dist > fovRadius then continue end
+        if dist > fovRadius then 
+            continue 
+        end
 
         if dist < shortestDistance then
             shortestDistance = dist
-            closestCharacter = char
+            closestCharacter = plr_char
         end
     end
 
@@ -780,9 +795,7 @@ local DestroyUIButton = Tab:CreateButton({
                 confirmDestroy = false
             end)
         else
-            pcall(function()
-                DisconnectScripts()
-            end)
+            DisconnectScripts()
             
             pcall(function()
                 Rayfield:Destroy()
@@ -825,6 +838,9 @@ function DisconnectScript()
         event:Disconnect()
         event = nil
     end
+    
+    Sense.teamSettings.enemy.enabled = false
+    Sense.teamSettings.friendly.enabled = false
     
     Sense.Unload()
     
