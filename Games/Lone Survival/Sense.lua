@@ -711,7 +711,7 @@ function EspInterface.getTeamColor(player)
 end
 
 function EspInterface.getCharacter(player)
-    for _, plr_char in ipairs(workspace.Players:GetPlayers()) do
+    for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
         if plr_char.Name == player.Name then
             return player_char
         end
