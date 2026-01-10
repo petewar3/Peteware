@@ -713,7 +713,7 @@ end
 function EspInterface.getCharacter(player)
     for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
         if plr_char.Name == player.Name then
-            return player_char
+            return plr_char
         end
     end
 end
