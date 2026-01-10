@@ -289,11 +289,14 @@ local function FetchPossibleTargets()
             continue
         end
             
-        local plr_hrp = plr_char:WaitForChild("HumanoidRootPart")
         local plr_humanoid = plr_char:WaitForChild("Humanoid")
+        if deadCheck and plr_humanoid.Health <= 0 then
+            continue
+        end
             
         if wallCheck then
             local partsToCheck = {}
+
             for _, partName in ipairs(characterParts.Core) do
                 local part = plr_char:FindFirstChild(partName)
                 if part then
@@ -303,7 +306,7 @@ local function FetchPossibleTargets()
 
             local isR15 = plr_char:FindFirstChild("UpperTorso") ~= nil
             local rigTable = isR15 and characterParts.R15 or characterParts.R6
-            for groupName, names in pairs(rigTable) do
+            for _, names in pairs(rigTable) do
                 for _, name in ipairs(names) do
                     local part = plr_char:FindFirstChild(name)
                     if part then
@@ -319,8 +322,7 @@ local function FetchPossibleTargets()
 
             local visibleParts = {}
             for _, part in ipairs(partsToCheck) do
-                local direction = part.Position - cameraPos
-                local result = workspace:Raycast(cameraPos, direction, params)
+                local result = workspace:Raycast(cameraPos, part.Position - cameraPos, params)
                 if not result then
                     table.insert(visibleParts, part)
                 end
@@ -333,12 +335,6 @@ local function FetchPossibleTargets()
         else
             table.insert(availablePlayers, plr)
         end
-        
-        if deadCheck and plr_humanoid.Health <= 0 then
-            continue
-        end
-        
-        table.insert(availablePlayers, plr)
     end
     
     return availablePlayers, possibleTargets
