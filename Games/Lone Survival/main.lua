@@ -5,6 +5,9 @@
     Override is a universal Roblox script designed primarily for FPS games.
     It provides functionality for controller support specifcally and gameplay enhancements.
     
+    Note:
+    Modified specifcally for lone survival
+
 ]]
 
 --// Loading Handler
@@ -259,7 +262,7 @@ local function FetchPossibleTargets()
     local currentCharacters = {}
     local possibleTargets = {}
     
-    for _, plr_char in ipairs(workspace.Players:GetChildren()) do
+    for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
         if plr_char.Name ~= char.Name then
             table.insert(currentCharacters, plr_char)
         end
@@ -267,7 +270,7 @@ local function FetchPossibleTargets()
     
     local cameraPos = camera.CFrame.Position
     
-    for _, plr_char in ipairs(workspace.Players:GetChildren()) do
+    for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
         local plr
         for _, v in ipairs(players:GetPlayers()) do
             if v.Name == plr_char.Name then
@@ -395,7 +398,7 @@ local function ToggleAimbot()
 end
 
 --// Visuals
-local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Other/Sense.lua'))()
+local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Games/Lone%20Survival/Sense.lua'))()
 
 --// Sense Configuration
 local enemyESP = false
@@ -753,7 +756,7 @@ local KeepPetewareToggle = Tab:CreateToggle({
                         game.Loaded:Wait()
                         task.wait(1)
                     end
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Universal/Override.lua"))()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Games/Lone%20Survival/main.lua"))()
                     ]])
                 end
             end)
