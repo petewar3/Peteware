@@ -234,7 +234,11 @@ local function FetchTargetPart(character, possibleTargets)
             for _, partName in ipairs(mappedParts) do
                 local part = character:FindFirstChild(partName)
                 if part then
-                    table.insert(targetParts, part)
+                    if wallCheck and possibleTargets and possibleTargets[character] and table.find(possibleTargets[character], part) then
+                        table.insert(targetParts, part)
+                    elseif not wallCheck then
+                        table.insert(targetParts, part)
+                    end
                 end
             end
         end
@@ -255,7 +259,7 @@ local function FetchTargetPart(character, possibleTargets)
 end
 
 local function FetchPossibleTargets()
-    local availablePlayers = {}
+    local availableCharacters = {}
     local currentCharacters = {}
     local possibleTargets = {}
     
@@ -329,15 +333,15 @@ local function FetchPossibleTargets()
             end
 
             if #visibleParts > 0 then
-                table.insert(availablePlayers, plr)
+                table.insert(availableCharacters, plr_char)
                 possibleTargets[plr_char] = visibleParts
             end
         else
-            table.insert(availablePlayers, plr)
+            table.insert(availableCharacters, plr_char)
         end
     end
     
-    return availablePlayers, possibleTargets
+    return availableCharacters, possibleTargets
 end
 
 local FOVCircle = Drawing.new("Circle")
@@ -364,22 +368,26 @@ local function FetchClosestTarget()
     
     local possibleCharacters, possibleTargets = FetchPossibleTargets()
 
-    for _, plr in ipairs(possibleCharacters) do
-        local char = plr.Character
-        if not char then continue end
+    for _, plr_char in ipairs(possibleCharacters) do
+        if not plr_char then
+            continue
+        end
+        
+        local plr_hrp = plr_char:WaitForChild("HumanoidRootPart")
 
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then continue end
-
-        local screenPos, onScreen = camera:WorldToViewportPoint(hrp.Position)
-        if not onScreen then continue end
+        local screenPos, onScreen = camera:WorldToViewportPoint(plr_hrp.Position)
+        if not onScreen then
+            continue
+        end
 
         local dist = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
-        if dist > fovRadius then continue end
+        if dist > fovRadius then
+            continue 
+        end
 
         if dist < shortestDistance then
             shortestDistance = dist
-            closestCharacter = char
+            closestCharacter = plr_char
         end
     end
 
@@ -784,12 +792,12 @@ local DestroyUIButton = Tab:CreateButton({
                 confirmDestroy = false
             end)
         else
-            pcall(function()
-                DisconnectScripts()
-            end)
+            DisconnectScripts()
             
-            pcall(function()
-                Rayfield:Destroy()
+            task.delay(0.2, function()
+                pcall(function()
+                    Rayfield:Destroy()
+                end)
             end)
         end
     end,
@@ -829,6 +837,9 @@ function DisconnectScript()
         event:Disconnect()
         event = nil
     end
+    
+    Sense.teamSettings.enemy.enabled = false
+    Sense.teamSettings.friendly.enabled = false
     
     Sense.Unload()
     
