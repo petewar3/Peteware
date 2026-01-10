@@ -346,20 +346,6 @@ local function FetchPossibleTargets()
     return availableCharacters, possibleTargets
 end
 
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = false
-FOVCircle.Thickness = 2
-FOVCircle.NumSides = 64
-FOVCircle.Filled = false
-FOVCircle.Transparency = 0.6
-FOVCircle.Color = Color3.fromRGB(235, 235, 235)
-
-local function UpdateFOVCircle()
-    local viewport = camera.ViewportSize
-    FOVCircle.Position = Vector2.new(viewport.X / 2, viewport.Y / 2)
-    FOVCircle.Radius = aimbotFOV
-end
-
 local function FetchClosestTarget()
     local closestCharacter = nil
     local shortestDistance = math.huge
@@ -398,8 +384,18 @@ end
 
 local aimbotEnabled = false
 
-local function ToggleAimbot()
-    aimbotEnabled = not aimbotEnabled
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Visible = false
+FOVCircle.Thickness = 2
+FOVCircle.NumSides = 64
+FOVCircle.Filled = false
+FOVCircle.Transparency = 0.6
+FOVCircle.Color = Color3.fromRGB(235, 235, 235)
+
+local function UpdateFOVCircle()
+    local viewport = camera.ViewportSize
+    FOVCircle.Position = Vector2.new(viewport.X / 2, viewport.Y / 2)
+    FOVCircle.Radius = aimbotFOV
 end
 
 --// Visuals
@@ -563,7 +559,8 @@ local AimbotKeybindToggle = Tab:CreateKeybind({
    HoldToInteract = false,
    Flag = "AimbotKeybindToggle", 
    Callback = function(Keybind)
-       ToggleAimbot()Notify(aimbotEnabled and "Aimbot Enabled" or "Aimbot Disabled.", 1.5)
+       aimbotEnabled = not aimbotEnabled
+       Notify(aimbotEnabled and "Aimbot Enabled" or "Aimbot Disabled.", 1.5)
    end,
 })
 
