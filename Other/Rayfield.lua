@@ -21,7 +21,7 @@ local function getService(name)
 	return if cloneref then cloneref(service) else service
 end
 
-getService('GuiService').AutoSelectGuiEnabled
+getService('GuiService').AutoSelectGuiEnabled = true
 
 -- Loads and executes a function hosted on a remote URL. Cancels the request if the requested URL takes too long to respond.
 -- Errors with the function are caught and logged to the output
