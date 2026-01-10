@@ -234,9 +234,11 @@ local function FetchTargetPart(character, possibleTargets)
             for _, partName in ipairs(mappedParts) do
                 local part = character:FindFirstChild(partName)
                 if part then
-                    if wallCheck and possibleTargets and possibleTargets[character] and table.find(possibleTargets[character], part) then
-                        table.insert(targetParts, part)
-                    elseif not wallCheck then
+                    if wallCheck then
+                        if possibleTargets and possibleTargets[character] and table.find(possibleTargets[character], part) then
+                            table.insert(targetParts, part)
+                        end
+                    else
                         table.insert(targetParts, part)
                     end
                 end
