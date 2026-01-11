@@ -397,8 +397,15 @@ local function UpdateFOVCircle()
 end
 
 local aimbotEnabled = false
-local aimbotConnUpdate
-local fovConnUpdate
+
+FOVCircle.Visible = true
+
+--// Events
+local events = {
+    aimbotConnUpdate,
+    fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle),
+    onTeleport
+}
 
 --// Visuals
 local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Other/Sense.lua'))()
@@ -427,14 +434,14 @@ Sense.teamSettings.friendly.chamsOutlineColor = { Color3.new(1, 0, 0), 0 }
 task.wait(1)
 Sense.Load()
 
---// UI locals
+--// UI variables
 local keepPeteware = true
 local teleportConnection = false
 local confirmDestroy = false
 
 --// Main UI
 local Window = Rayfield:CreateWindow({
-   Name = "Override | Peteware v1.0.0",
+   Name = "Override | Peteware v1.11.4",
    Icon = 0, 
    LoadingTitle = "Override | Peteware",
    LoadingSubtitle = "Developed by Peteware",
@@ -520,9 +527,7 @@ local Section = Tab:CreateSection("Welcome!")
 ]]
 
 local Paragraph = Tab:CreateParagraph({Title = "What's new and improved", Content = [[
-    [+] Added Feature
-    [/] Fixed Feature
-    [-] Removed Feature
+    [/] Improved script optimisation
     Please consider joining the server and suggesting more features.
     Please report any bugs to our discord server by creating a ticket.]]})
 
@@ -565,12 +570,12 @@ local AimbotKeybindToggle = Tab:CreateKeybind({
        Notify(aimbotEnabled and "Aimbot Enabled" or "Aimbot Disabled.", 1.5)
        
         if aimbotEnabled then
-            if typeof(fovConnUpdate) == "RBXScriptConnection" then
-                fovConnUpdate:Disconnect()
-                fovConnUpdate = nil
+            if typeof(events.fovConnUpdate) == "RBXScriptConnection" then
+                events.fovConnUpdate:Disconnect()
+                events.fovConnUpdate = nil
             end
             
-            aimbotConnUpdate = runService.RenderStepped:Connect(function()
+            events.aimbotConnUpdate = runService.RenderStepped:Connect(function()
                 UpdateFOVCircle()
                 if aimbotEnabled then
                     local targetCharacter, possibleTargets = FetchClosestTarget()
@@ -587,12 +592,12 @@ local AimbotKeybindToggle = Tab:CreateKeybind({
                 end
             end)
         else
-            if typeof(aimbotConnUpdate) == "RBXScriptConnection" then
-                aimbotConnUpdate:Disconnect()
-                aimbotConnUpdate = nil
+            if typeof(events.aimbotConnUpdate) == "RBXScriptConnection" then
+                events.aimbotConnUpdate:Disconnect()
+                events.aimbotConnUpdate = nil
             end
             
-            fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle)
+            events.fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle)
         end
    end,
 })
@@ -770,8 +775,6 @@ local RejoinButton = Tab:CreateButton({
    end,
 })
 
-local onTeleport
-
 local KeepPetewareToggle = Tab:CreateToggle({
     Name = "Keep Peteware On Server Hop/Rejoin",
     CurrentValue = false,
@@ -783,7 +786,7 @@ local KeepPetewareToggle = Tab:CreateToggle({
             keepPeteware = true
             teleportCheck = false
 
-            onTeleport = player.OnTeleport:Connect(function(State)
+            events.onTeleport = player.OnTeleport:Connect(function(State)
                 if keepPeteware and not teleportCheck and queueteleport then
                     teleportCheck = true
                     queueteleport([[
@@ -837,26 +840,21 @@ local DestroyUIButton = Tab:CreateButton({
 
 Rayfield:LoadConfiguration()
 
-FOVCircle.Visible = true
-
---// Events
-local events = {
-    aimbotConnUpdate,
-    fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle),
-    onTeleport
-}
-
 --// Disconnect Script Features
 function DisconnectScripts()
     getgenv().Override = nil
     keepPeteware = false
     
-    for _, event in ipairs(events) do
+    for key, event in pairs(events) do
         if typeof(event) == "RBXScriptConnection" then
             event:Disconnect()
-            event = nil
         end
+        events[key] = nil
     end
+    
+    task.delay(1, function()
+        print(typeof(events.fovConnUpdate))
+    end)
     
     Sense.teamSettings.enemy.enabled = false
     Sense.teamSettings.friendly.enabled = false
