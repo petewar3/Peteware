@@ -383,6 +383,7 @@ local function FetchClosestTarget()
 end
 
 local aimbotEnabled = false
+local aimbotConnUpdate
 
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = false
@@ -561,6 +562,37 @@ local AimbotKeybindToggle = Tab:CreateKeybind({
    Callback = function(Keybind)
        aimbotEnabled = not aimbotEnabled
        Notify(aimbotEnabled and "Aimbot Enabled" or "Aimbot Disabled.", 1.5)
+       
+        if aimbotEnabled then
+            if typeof(fovConnUpdate) == "RBXScriptConnection" then
+                fovConnUpdate:Disconnect()
+                fovConnUpdate = nil
+            end
+            
+            aimbotConnUpdate = runService.RenderStepped:Connect(function()
+                UpdateFOVCircle()
+                if aimbotEnabled then
+                    local targetCharacter, possibleTargets = FetchClosestTarget()
+                    if targetCharacter then
+                        local targetPart = FetchTargetPart(targetCharacter, possibleTargets)
+                        if targetPart then
+                            local camCFrame = camera.CFrame
+                            local direction = (targetPart.Position - camCFrame.Position).Unit
+                            local t = 1 - aimbotSmoothness
+                            local newLookVector = camCFrame.LookVector:Lerp(direction, t)
+                            camera.CFrame = CFrame.new(camCFrame.Position, camCFrame.Position + newLookVector)
+                        end
+                    end
+                end
+            end)
+        else
+            if typeof(aimbotConnUpdate) == "RBXScriptConnection" then
+                aimbotConnUpdate:Disconnect()
+                aimbotConnUpdate = nil
+            end
+            
+            fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle)
+        end
    end,
 })
 
@@ -808,22 +840,8 @@ FOVCircle.Visible = true
 
 --// Events
 local events = {
-    aimbotConnUpdate = runService.RenderStepped:Connect(function()
-        UpdateFOVCircle()
-        if aimbotEnabled then
-            local targetCharacter, possibleTargets = FetchClosestTarget()
-            if targetCharacter then
-                local targetPart = FetchTargetPart(targetCharacter, possibleTargets)
-                if targetPart then
-                    local camCFrame = camera.CFrame
-                    local direction = (targetPart.Position - camCFrame.Position).Unit
-                    local t = 1 - aimbotSmoothness
-                    local newLookVector = camCFrame.LookVector:Lerp(direction, t)
-                    camera.CFrame = CFrame.new(camCFrame.Position, camCFrame.Position + newLookVector)
-                end
-            end
-        end
-    end),
+    aimbotConnUpdate,
+    fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle),
     onTeleport
 }
 
@@ -833,8 +851,10 @@ function DisconnectScripts()
     keepPeteware = false
     
     for _, event in ipairs(events) do
-        event:Disconnect()
-        event = nil
+        if typeof(event) == "RBXScriptConnection" then
+            event:Disconnect()
+            event = nil
+        end
     end
     
     Sense.teamSettings.enemy.enabled = false
