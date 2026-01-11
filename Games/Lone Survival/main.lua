@@ -119,6 +119,8 @@ end)
 local desynced = false
 
 --// Combat
+local AIPath = workspace:WaitForChild("AI")
+
 local aimbotTargets = {"Players"}
 local aimbotSmoothness = 0.15
 local aimbotFOV = 90
@@ -350,13 +352,13 @@ local function FetchPossibleTargets()
     
     if table.find(aimbotTargets, "AI") then
         local currentAICharacters = {}
-        for _, ai_char in ipairs(workspace:WaitForChild("AI"):GetChildren()) do
+        for _, ai_char in ipairs(AIPath:GetChildren()) do
             if ai_char:IsA("Model") then
                 table.insert(currentAICharacters, ai_char)
             end
         end
         
-        for _, ai_char in ipairs(workspace:WaitForChild("AI"):GetChildren()) do
+        for _, ai_char in ipairs(AIPath:GetChildren()) do
             local ai_humanoid = ai_char:WaitForChild("Humanoid")
             if deadCheck and ai_humanoid.Health <= 0 then
                 continue
@@ -466,7 +468,8 @@ FOVCircle.Visible = true
 local events = {
     aimbotConnUpdate,
     fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle),
-    onTeleport
+    onTeleport,
+    aiESPUpdate
 }
 
 --// Visuals
@@ -502,6 +505,18 @@ local function ModifyAIESP(key, value)
         end
     end
 end
+
+for _, AI in ipairs(AIPath:GetChildren()) do
+    if AI:IsA("Model") then
+        CreateAIESP(AI)
+    end
+end
+
+events.aiESPUpdate = AIPath.ChildAdded:Connect(function(child)
+    if child:IsA("Model") then
+        CreateAIESP(AI)
+    end
+end)
 
 Sense.whitelist = {}
 
