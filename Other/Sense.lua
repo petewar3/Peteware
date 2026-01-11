@@ -186,7 +186,7 @@ end
 function EspObject:Destruct()
 	self.renderConnection:Disconnect();
 	
-	if not self.bin then
+	if not self or not self.bin then
 	    return;
 	end
 
