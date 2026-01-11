@@ -508,13 +508,13 @@ end
 
 for _, AI in ipairs(AIPath:GetChildren()) do
     if AI:IsA("Model") then
-        CreateAIESP(AI)
+        CreateInstance(AI)
     end
 end
 
 events.aiESPUpdate = AIPath.ChildAdded:Connect(function(child)
     if child:IsA("Model") then
-        CreateAIESP(AI)
+        CreateInstance(child)
     end
 end)
 
