@@ -428,7 +428,7 @@ Sense.teamSettings.friendly.enabled = teamESP
 Sense.teamSettings.friendly.chams = true
 Sense.teamSettings.friendly.chamsVisibleOnly = false
 Sense.teamSettings.friendly.chamsFillColor = { Color3.new(0.2, 0.2, 0.2), 0.5 }
-Sense.teamSettings.friendly.chamsOutlineColor = { Color3.new(1, 0, 0), 0 }
+Sense.teamSettings.friendly.chamsOutlineColor = { Color3.new(120/255, 255/255, 120/255), 0 }
 
 --// ESP Load
 task.wait(1)
