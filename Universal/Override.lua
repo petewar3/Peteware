@@ -382,9 +382,6 @@ local function FetchClosestTarget()
     return closestCharacter, possibleTargets
 end
 
-local aimbotEnabled = false
-local aimbotConnUpdate
-
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = false
 FOVCircle.Thickness = 2
@@ -398,6 +395,10 @@ local function UpdateFOVCircle()
     FOVCircle.Position = Vector2.new(viewport.X / 2, viewport.Y / 2)
     FOVCircle.Radius = aimbotFOV
 end
+
+local aimbotEnabled = false
+local aimbotConnUpdate
+local fovConnUpdate
 
 --// Visuals
 local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Other/Sense.lua'))()
