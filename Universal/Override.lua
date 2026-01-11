@@ -687,13 +687,10 @@ local EnemyESPToggle = Tab:CreateToggle({
    Flag = "EnemyESPToggle", 
    Callback = function(Value)
        enemyESP = Value
+       Sense.teamSettings.enemy.enabled = enemyESP
        if enemyESP then
-           task.wait()
-           Sense.teamSettings.enemy.enabled = enemyESP
            Notify("Enemy ESP Enabled. Highlights all enemies in a rendering radius.", 2.5)
        else
-           task.wait()
-           Sense.teamSettings.enemy.enabled = enemyESP
            Notify("Enemy ESP Disabled.", 1.5)
        end
    end,
@@ -705,13 +702,10 @@ local TeamESPToggle = Tab:CreateToggle({
    Flag = "TeamESPToggle", 
    Callback = function(Value)
        teamESP = Value
+       Sense.teamSettings.friendly.enabled = teamESP
        if teamESP then
-           task.wait()
-           Sense.teamSettings.friendly.enabled = teamESP
            Notify("Team ESP Enabled. Highlights all teammates in a rendering radius.", 2.5)
        else
-           task.wait()
-           Sense.teamSettings.friendly.enabled = teamESP
            Notify("Team ESP Disabled.", 1.5)
        end
    end,
