@@ -185,15 +185,9 @@ end
 
 function EspObject:Destruct()
 	self.renderConnection:Disconnect();
-	
-	if not self or not self.bin then
-	    return;
-	end
 
 	for i = 1, #self.bin do
-	    if self.bin[i] then
-		    self.bin[i]:Remove();
-		end
+		self.bin[i]:Remove();
 	end
 
 	clear(self);
