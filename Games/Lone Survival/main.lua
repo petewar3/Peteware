@@ -475,6 +475,33 @@ local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar
 --// Sense Configuration
 local enemyESP = false
 local teamESP = false
+local AIESP = false
+
+local AIESPData = {}
+
+local function CreateAIESP(AIInstance)
+    local AIData = {
+        enabled = aiESP
+        text = "AI Bot",
+        textColor = { Color3.fromRGB(255, 140, 0), 1 },
+        textOutline = true,                     
+        textOutlineColor = Color3.fromRGB(15, 15, 15),
+        textSize = 17,                          
+        textFont = 2,                           
+        limitDistance = false                     
+    }
+    
+    local AIESPInstance = Sense.AddInstance(AIInstance, aiData)
+    table.insert(AIESPData, AIESPInstance)
+end
+
+local function ModifyAIESP(key, value)
+    for _, esp in ipairs(AIESPData) do
+        if esp.options[key] ~= nil then
+            esp.options[key] = value
+        end
+    end
+end
 
 Sense.whitelist = {}
 
@@ -762,13 +789,10 @@ local EnemyESPToggle = Tab:CreateToggle({
    Flag = "EnemyESPToggle", 
    Callback = function(Value)
        enemyESP = Value
+       Sense.teamSettings.enemy.enabled = enemyESP
        if enemyESP then
-           task.wait()
-           Sense.teamSettings.enemy.enabled = enemyESP
            Notify("Enemy ESP Enabled. Highlights all enemies in a rendering radius.", 2.5)
        else
-           task.wait()
-           Sense.teamSettings.enemy.enabled = enemyESP
            Notify("Enemy ESP Disabled.", 1.5)
        end
    end,
@@ -780,14 +804,26 @@ local TeamESPToggle = Tab:CreateToggle({
    Flag = "TeamESPToggle", 
    Callback = function(Value)
        teamESP = Value
+       Sense.teamSettings.friendly.enabled = teamESP
        if teamESP then
-           task.wait()
-           Sense.teamSettings.friendly.enabled = teamESP
            Notify("Team ESP Enabled. Highlights all teammates in a rendering radius.", 2.5)
        else
-           task.wait()
-           Sense.teamSettings.friendly.enabled = teamESP
            Notify("Team ESP Disabled.", 1.5)
+       end
+   end,
+})
+
+local AIESPToggle = Tab:CreateToggle({
+   Name = "AI ESP",
+   CurrentValue = false,
+   Flag = "AIESPToggle", 
+   Callback = function(Value)
+       AIESP = Value
+       ModifyAIESP("enabled", AIESP)
+       if AIESP then
+           Notify("AI ESP Enabled. Highlights all teammates in a rendering radius.", 2.5)
+       else
+           Notify("AI ESP Disabled.", 1.5)
        end
    end,
 })
