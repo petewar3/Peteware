@@ -444,9 +444,6 @@ local function FetchClosestTarget()
     return closestCharacter, possibleTargets
 end
 
-local aimbotEnabled = false
-local aimbotConnUpdate
-
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = false
 FOVCircle.Thickness = 2
@@ -460,6 +457,17 @@ local function UpdateFOVCircle()
     FOVCircle.Position = Vector2.new(viewport.X / 2, viewport.Y / 2)
     FOVCircle.Radius = aimbotFOV
 end
+
+local aimbotEnabled = false
+
+FOVCircle.Visible = true
+
+--// Events
+local events = {
+    aimbotConnUpdate,
+    fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle),
+    onTeleport
+}
 
 --// Visuals
 local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Games/Lone%20Survival/Sense.lua'))()
@@ -626,7 +634,12 @@ local AimbotKeybindToggle = Tab:CreateKeybind({
        Notify(aimbotEnabled and "Aimbot Enabled" or "Aimbot Disabled.", 1.5)
        
         if aimbotEnabled then
-            aimbotConnUpdate = runService.RenderStepped:Connect(function()
+            if typeof(events.fovConnUpdate) == "RBXScriptConnection" then
+                events.fovConnUpdate:Disconnect()
+                events.fovConnUpdate = nil
+            end
+            
+            events.aimbotConnUpdate = runService.RenderStepped:Connect(function()
                 UpdateFOVCircle()
                 if aimbotEnabled then
                     local targetCharacter, possibleTargets = FetchClosestTarget()
@@ -642,9 +655,13 @@ local AimbotKeybindToggle = Tab:CreateKeybind({
                     end
                 end
             end)
-        elseif typeof(aimbotConnUpdate) == "RBXScriptConnection" then
-            aimbotConnUpdate:Disconnect()
-            aimbotConnUpdate = nil
+        else
+            if typeof(events.aimbotConnUpdate) == "RBXScriptConnection" then
+                events.aimbotConnUpdate:Disconnect()
+                events.aimbotConnUpdate = nil
+            end
+            
+            events.fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle)
         end
    end,
 })
@@ -833,8 +850,6 @@ local RejoinButton = Tab:CreateButton({
    end,
 })
 
-local onTeleport
-
 local KeepPetewareToggle = Tab:CreateToggle({
     Name = "Keep Peteware On Server Hop/Rejoin",
     CurrentValue = false,
@@ -846,7 +861,7 @@ local KeepPetewareToggle = Tab:CreateToggle({
             keepPeteware = true
             teleportCheck = false
 
-            onTeleport = player.OnTeleport:Connect(function(State)
+            events.onTeleport = player.OnTeleport:Connect(function(State)
                 if keepPeteware and not teleportCheck and queueteleport then
                     teleportCheck = true
                     queueteleport([[
@@ -902,22 +917,16 @@ Rayfield:LoadConfiguration()
 
 FOVCircle.Visible = true
 
---// Events
-local events = {
-    aimbotConnUpdate,
-    onTeleport
-}
-
 --// Disconnect Script Features
 function DisconnectScripts()
     getgenv().Override = nil
     keepPeteware = false
     
-    for _, event in ipairs(events) do
+    for key, event in pairs(events) do
         if typeof(event) == "RBXScriptConnection" then
             event:Disconnect()
-            event = nil
         end
+        events[key] = nil
     end
     
     Sense.teamSettings.enemy.enabled = false
