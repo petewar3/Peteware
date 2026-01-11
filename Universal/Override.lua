@@ -852,10 +852,6 @@ function DisconnectScripts()
         events[key] = nil
     end
     
-    task.delay(1, function()
-        print(typeof(events.fovConnUpdate))
-    end)
-    
     Sense.teamSettings.enemy.enabled = false
     Sense.teamSettings.friendly.enabled = false
     
