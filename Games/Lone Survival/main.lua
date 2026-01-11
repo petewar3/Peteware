@@ -119,6 +119,7 @@ end)
 local desynced = false
 
 --// Combat
+local aimbotTargets = {"Players"}
 local aimbotSmoothness = 0.15
 local aimbotFOV = 90
 local deadCheck
@@ -200,14 +201,14 @@ end
 local lastTargetPartRequest = {}
 
 local function FetchTargetPart(character, possibleTargets)
-    if not lastTargetPartRequest[character.Name] then
-        lastTargetPartRequest[character.Name] = {
+    if not lastTargetPartRequest[character] then
+        lastTargetPartRequest[character] = {
             CurrentPart = nil,
             Expiry = 0
         }
     end
     
-    local tracker = lastTargetPartRequest[character.Name]
+    local tracker = lastTargetPartRequest[character]
 
     if tick() < tracker.Expiry and tracker.CurrentPart and tracker.CurrentPart.Parent then
         return tracker.CurrentPart
@@ -265,83 +266,143 @@ end
 
 local function FetchPossibleTargets()
     local availableCharacters = {}
-    local currentCharacters = {}
     local possibleTargets = {}
-    
-    for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
-        if plr_char:IsA("Model") then
-            table.insert(currentCharacters, plr_char)
-        end
-    end
     
     local cameraPos = camera.CFrame.Position
     
-    for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
-        local plr
-        for _, v in ipairs(players:GetPlayers()) do
-            if v.Name == plr_char.Name then
-                plr = v
-                break
+    if table.find(aimbotTargets, "Players") then
+        local currentPlayerCharacters = {}
+        for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
+            if plr_char:IsA("Model") then
+                table.insert(currentPlayerCharacters, plr_char)
             end
         end
     
-        if not plr or plr == player then
-            continue
-        end
-        
-        if friendCheck and player:IsFriendsWith(plr.UserId) then
-            continue
-        end
-        
-        if teamCheck and plr.Team and plr.Team == player.Team then
-            continue
-        end
-            
-        local plr_humanoid = plr_char:WaitForChild("Humanoid")
-        if deadCheck and plr_humanoid.Health <= 0 then
-            continue
-        end
-            
-        if wallCheck then
-            local partsToCheck = {}
-
-            for _, partName in ipairs(characterParts.Core) do
-                local part = plr_char:FindFirstChild(partName)
-                if part then
-                    table.insert(partsToCheck, part)
+        for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
+            local plr
+            for _, v in ipairs(players:GetPlayers()) do
+                if v.Name == plr_char.Name then
+                    plr = v
+                    break
                 end
             end
+    
+            if not plr or plr == player then
+                continue
+            end
+        
+            if friendCheck and player:IsFriendsWith(plr.UserId) then
+                continue
+            end
+        
+            if teamCheck and plr.Team and plr.Team == player.Team then
+                continue
+            end
+            
+            local plr_humanoid = plr_char:WaitForChild("Humanoid")
+            if deadCheck and plr_humanoid.Health <= 0 then
+                continue
+            end
+            
+            if wallCheck then
+                local partsToCheck = {}
 
-            local isR15 = plr_char:FindFirstChild("UpperTorso") ~= nil
-            local rigTable = isR15 and characterParts.R15 or characterParts.R6
-            for _, names in pairs(rigTable) do
-                for _, name in ipairs(names) do
-                    local part = plr_char:FindFirstChild(name)
+                for _, partName in ipairs(characterParts.Core) do
+                    local part = plr_char:FindFirstChild(partName)
                     if part then
                         table.insert(partsToCheck, part)
                     end
                 end
-            end
 
-            local params = RaycastParams.new()
-            params.FilterType = Enum.RaycastFilterType.Exclude
-            params.IgnoreWater = true
-            params.FilterDescendantsInstances = currentCharacters
-
-            local visibleParts = {}
-            for _, part in ipairs(partsToCheck) do
-                local result = workspace:Raycast(cameraPos, part.Position - cameraPos, params)
-                if not result then
-                    table.insert(visibleParts, part)
+                local isR15 = plr_char:FindFirstChild("UpperTorso") ~= nil
+                local rigTable = isR15 and characterParts.R15 or characterParts.R6
+                for _, names in pairs(rigTable) do
+                    for _, name in ipairs(names) do
+                        local part = plr_char:FindFirstChild(name)
+                        if part then
+                            table.insert(partsToCheck, part)
+                        end
+                    end
                 end
-            end
 
-            if #visibleParts > 0 then
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Exclude
+                params.IgnoreWater = true
+                params.FilterDescendantsInstances = currentPlayerCharacters
+
+                local visibleParts = {}
+                for _, part in ipairs(partsToCheck) do
+                    local result = workspace:Raycast(cameraPos, part.Position - cameraPos, params)
+                    if not result then
+                        table.insert(visibleParts, part)
+                    end
+                end
+
+                if #visibleParts > 0 then
+                    table.insert(availableCharacters, plr_char)
+                    possibleTargets[plr_char] = visibleParts
+                end
+            else
                 table.insert(availableCharacters, plr_char)
-                possibleTargets[plr_char] = visibleParts
             end
-        else
-            table.insert(availableCharacters, plr_char)
+        end
+    end
+    
+    if table.find(aimbotTargets, "AI") then
+        local currentAICharacters = {}
+        for _, ai_char in ipairs(workspace:WaitForChild("AI"):GetChildren()) do
+            if ai_char:IsA("Model") then
+                table.insert(currentAICharacters, ai_char)
+            end
+        end
+        
+        for _, ai_char in ipairs(workspace:WaitForChild("AI"):GetChildren()) do
+            local ai_humanoid = ai_char:WaitForChild("Humanoid")
+            if deadCheck and ai_humanoid.Health <= 0 then
+                continue
+            end
+            
+            if wallCheck then
+                local partsToCheck = {}
+
+                for _, partName in ipairs(characterParts.Core) do
+                    local part = ai_char:FindFirstChild(partName)
+                    if part then
+                        table.insert(partsToCheck, part)
+                    end
+                end
+
+                local isR15 = ai_char:FindFirstChild("UpperTorso") ~= nil
+                local rigTable = isR15 and characterParts.R15 or characterParts.R6
+                for _, names in pairs(rigTable) do
+                    for _, name in ipairs(names) do
+                        local part = ai_char:FindFirstChild(name)
+                        if part then
+                            table.insert(partsToCheck, part)
+                        end
+                    end
+                end
+
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Exclude
+                params.IgnoreWater = true
+                params.FilterDescendantsInstances = currentAICharacters
+
+                local visibleParts = {}
+                for _, part in ipairs(partsToCheck) do
+                    local result = workspace:Raycast(cameraPos, part.Position - cameraPos, params)
+                    if not result then
+                        table.insert(visibleParts, part)
+                    end
+                end
+
+                if #visibleParts > 0 then
+                    table.insert(availableCharacters, ai_char)
+                    possibleTargets[ai_char] = visibleParts
+                end
+            else
+                table.insert(availableCharacters, ai_char)
+            end
         end
     end
     
@@ -566,6 +627,17 @@ local AimbotKeybindToggle = Tab:CreateKeybind({
 })
 
 local Section = Tab:CreateSection("Combat Configuration")
+
+local AimbotTargetsDropdown = Tab:CreateDropdown({
+   Name = "Aimbot Targets",
+   Options = {"Players", "AI"},
+   CurrentOption = {"Players"},
+   MultipleOptions = true,
+   Flag = "AimbotTargetsDropdown", 
+   Callback = function(Options)
+       aimbotTargets = Options
+   end,
+})
 
 local AimbotPartsDropdown = Tab:CreateDropdown({
    Name = "Aimbot Target Parts",
