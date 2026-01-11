@@ -494,7 +494,7 @@ local function CreateAIESP(AIInstance)
         limitDistance = false                     
     }
     
-    local AIESPInstance = Sense.AddInstance(AIInstance, aiData)
+    local AIESPInstance = Sense.AddInstance(AIInstance, AIData)
     table.insert(AIESPData, AIESPInstance)
 end
 
@@ -508,13 +508,13 @@ end
 
 for _, AI in ipairs(AIPath:GetChildren()) do
     if AI:IsA("Model") then
-        CreateInstance(AI)
+        CreateAIESP(AI)
     end
 end
 
 events.aiESPUpdate = AIPath.ChildAdded:Connect(function(child)
     if child:IsA("Model") then
-        CreateInstance(child)
+        CreateAIESP(child)
     end
 end)
 
