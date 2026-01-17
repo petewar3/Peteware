@@ -30,9 +30,6 @@ end
 httprequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 queueteleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
 setclip = setclipboard or (syn and syn.setclipboard) or (Clipboard and Clipboard.set)
-gethui = gethui or function()
-    return game:GetService("CoreGui")
-end
 
 --// Services & Setup
 local players = game:GetService("Players")
