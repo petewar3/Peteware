@@ -5,6 +5,9 @@
     Override is a universal Roblox script designed primarily for FPS games.
     It provides functionality for controller support specifcally and gameplay enhancements.
     
+    Note:
+    Modified specifcally for lone survival
+
 ]]
 
 --// Loading Handler
@@ -27,9 +30,6 @@ end
 httprequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 queueteleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
 setclip = setclipboard or (syn and syn.setclipboard) or (Clipboard and Clipboard.set)
-gethui = gethui or function()
-    return game:GetService("CoreGui")
-end
 
 --// Services & Setup
 local players = game:GetService("Players")
@@ -116,6 +116,9 @@ end)
 local desynced = false
 
 --// Combat
+local AIPath = workspace:WaitForChild("AI")
+
+local aimbotTargets = {"Players"}
 local aimbotSmoothness = 0.15
 local aimbotFOV = 90
 local deadCheck
@@ -197,14 +200,14 @@ end
 local lastTargetPartRequest = {}
 
 local function FetchTargetPart(character, possibleTargets)
-    if not lastTargetPartRequest[character.Name] then
-        lastTargetPartRequest[character.Name] = {
+    if not lastTargetPartRequest[character] then
+        lastTargetPartRequest[character] = {
             CurrentPart = nil,
             Expiry = 0
         }
     end
     
-    local tracker = lastTargetPartRequest[character.Name]
+    local tracker = lastTargetPartRequest[character]
 
     if tick() < tracker.Expiry and tracker.CurrentPart and tracker.CurrentPart.Parent then
         return tracker.CurrentPart
@@ -262,84 +265,143 @@ end
 
 local function FetchPossibleTargets()
     local availableCharacters = {}
-    local currentCharacters = {}
     local possibleTargets = {}
-    
-    for _, plr in ipairs(players:GetPlayers()) do
-        local plr_char = plr.Character
-        
-        if not plr_char then
-            continue
-        end
-        
-        table.insert(currentCharacters, plr_char)
-    end
     
     local cameraPos = camera.CFrame.Position
     
-    for _, plr in ipairs(players:GetPlayers()) do
-        if plr == player then
-            continue
+    if table.find(aimbotTargets, "Players") then
+        local currentPlayerCharacters = {}
+        for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
+            if plr_char:IsA("Model") then
+                table.insert(currentPlayerCharacters, plr_char)
+            end
         end
-        
-        if friendCheck and player:IsFriendsWith(plr.UserId) then
-            continue
-        end
-        
-        if teamCheck and plr.Team and plr.Team == player.Team then
-            continue
-        end
-            
-        local plr_char = plr.Character
-        if not plr_char then
-            continue
-        end
-            
-        local plr_humanoid = plr_char:WaitForChild("Humanoid")
-        if deadCheck and plr_humanoid.Health <= 0 then
-            continue
-        end
-            
-        if wallCheck then
-            local partsToCheck = {}
-
-            for _, partName in ipairs(characterParts.Core) do
-                local part = plr_char:FindFirstChild(partName)
-                if part then
-                    table.insert(partsToCheck, part)
+    
+        for _, plr_char in ipairs(workspace:WaitForChild("Players"):GetChildren()) do
+            local plr
+            for _, v in ipairs(players:GetPlayers()) do
+                if v.Name == plr_char.Name then
+                    plr = v
+                    break
                 end
             end
+    
+            if not plr or plr == player then
+                continue
+            end
+        
+            if friendCheck and player:IsFriendsWith(plr.UserId) then
+                continue
+            end
+        
+            if teamCheck and plr.Team and plr.Team == player.Team then
+                continue
+            end
+            
+            local plr_humanoid = plr_char:WaitForChild("Humanoid")
+            if deadCheck and plr_humanoid.Health <= 0 then
+                continue
+            end
+            
+            if wallCheck then
+                local partsToCheck = {}
 
-            local isR15 = plr_char:FindFirstChild("UpperTorso") ~= nil
-            local rigTable = isR15 and characterParts.R15 or characterParts.R6
-            for _, names in pairs(rigTable) do
-                for _, name in ipairs(names) do
-                    local part = plr_char:FindFirstChild(name)
+                for _, partName in ipairs(characterParts.Core) do
+                    local part = plr_char:FindFirstChild(partName)
                     if part then
                         table.insert(partsToCheck, part)
                     end
                 end
-            end
 
-            local params = RaycastParams.new()
-            params.FilterType = Enum.RaycastFilterType.Exclude
-            params.IgnoreWater = true
-            params.FilterDescendantsInstances = currentCharacters
-
-            local visibleParts = {}
-            for _, part in ipairs(partsToCheck) do
-                local result = workspace:Raycast(cameraPos, part.Position - cameraPos, params)
-                if not result then
-                    table.insert(visibleParts, part)
+                local isR15 = plr_char:FindFirstChild("UpperTorso") ~= nil
+                local rigTable = isR15 and characterParts.R15 or characterParts.R6
+                for _, names in pairs(rigTable) do
+                    for _, name in ipairs(names) do
+                        local part = plr_char:FindFirstChild(name)
+                        if part then
+                            table.insert(partsToCheck, part)
+                        end
+                    end
                 end
-            end
 
-            if #visibleParts > 0 then
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Exclude
+                params.IgnoreWater = true
+                params.FilterDescendantsInstances = currentPlayerCharacters
+
+                local visibleParts = {}
+                for _, part in ipairs(partsToCheck) do
+                    local result = workspace:Raycast(cameraPos, part.Position - cameraPos, params)
+                    if not result then
+                        table.insert(visibleParts, part)
+                    end
+                end
+
+                if #visibleParts > 0 then
+                    table.insert(availableCharacters, plr_char)
+                    possibleTargets[plr_char] = visibleParts
+                end
+            else
                 table.insert(availableCharacters, plr_char)
-                possibleTargets[plr_char] = visibleParts
             end
-        else
-            table.insert(availableCharacters, plr_char)
+        end
+    end
+    
+    if table.find(aimbotTargets, "AI") then
+        local currentAICharacters = {}
+        for _, ai_char in ipairs(AIPath:GetChildren()) do
+            if ai_char:IsA("Model") then
+                table.insert(currentAICharacters, ai_char)
+            end
+        end
+        
+        for _, ai_char in ipairs(AIPath:GetChildren()) do
+            local ai_humanoid = ai_char:WaitForChild("Humanoid")
+            if deadCheck and ai_humanoid.Health <= 0 then
+                continue
+            end
+            
+            if wallCheck then
+                local partsToCheck = {}
+
+                for _, partName in ipairs(characterParts.Core) do
+                    local part = ai_char:FindFirstChild(partName)
+                    if part then
+                        table.insert(partsToCheck, part)
+                    end
+                end
+
+                local isR15 = ai_char:FindFirstChild("UpperTorso") ~= nil
+                local rigTable = isR15 and characterParts.R15 or characterParts.R6
+                for _, names in pairs(rigTable) do
+                    for _, name in ipairs(names) do
+                        local part = ai_char:FindFirstChild(name)
+                        if part then
+                            table.insert(partsToCheck, part)
+                        end
+                    end
+                end
+
+                local params = RaycastParams.new()
+                params.FilterType = Enum.RaycastFilterType.Exclude
+                params.IgnoreWater = true
+                params.FilterDescendantsInstances = currentAICharacters
+
+                local visibleParts = {}
+                for _, part in ipairs(partsToCheck) do
+                    local result = workspace:Raycast(cameraPos, part.Position - cameraPos, params)
+                    if not result then
+                        table.insert(visibleParts, part)
+                    end
+                end
+
+                if #visibleParts > 0 then
+                    table.insert(availableCharacters, ai_char)
+                    possibleTargets[ai_char] = visibleParts
+                end
+            else
+                table.insert(availableCharacters, ai_char)
+            end
         end
     end
     
@@ -357,19 +419,18 @@ local function FetchClosestTarget()
     local possibleCharacters, possibleTargets = FetchPossibleTargets()
 
     for _, plr_char in ipairs(possibleCharacters) do
-        if not plr_char then
+        local plr_hrp = plr_char:FindFirstChild("HumanoidRootPart")
+        if not plr_hrp then
             continue
         end
-        
-        local plr_hrp = plr_char:WaitForChild("HumanoidRootPart")
 
         local screenPos, onScreen = camera:WorldToViewportPoint(plr_hrp.Position)
-        if not onScreen then
-            continue
+        if not onScreen then 
+            continue 
         end
 
         local dist = (Vector2.new(screenPos.X, screenPos.Y) - screenCenter).Magnitude
-        if dist > fovRadius then
+        if dist > fovRadius then 
             continue 
         end
 
@@ -404,15 +465,55 @@ FOVCircle.Visible = true
 local events = {
     aimbotConnUpdate,
     fovConnUpdate = runService.RenderStepped:Connect(UpdateFOVCircle),
-    onTeleport
+    onTeleport,
+    aiESPUpdate
 }
 
 --// Visuals
-local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Other/Sense.lua'))()
+local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Games/Lone%20Survival/Sense.lua'))()
 
 --// Sense Configuration
 local enemyESP = false
 local teamESP = false
+local AIESP = false
+
+local AIESPData = {}
+
+local function CreateAIESP(AIInstance)
+    local AIData = {
+        enabled = aiESP
+        text = "AI Bot",
+        textColor = { Color3.fromRGB(255, 140, 0), 1 },
+        textOutline = true,                     
+        textOutlineColor = Color3.fromRGB(15, 15, 15),
+        textSize = 17,                          
+        textFont = 2,                           
+        limitDistance = false                     
+    }
+    
+    local AIESPInstance = Sense.AddInstance(AIInstance, aiData)
+    table.insert(AIESPData, AIESPInstance)
+end
+
+local function ModifyAIESP(key, value)
+    for _, esp in ipairs(AIESPData) do
+        if esp.options[key] ~= nil then
+            esp.options[key] = value
+        end
+    end
+end
+
+for _, AI in ipairs(AIPath:GetChildren()) do
+    if AI:IsA("Model") then
+        CreateAIESP(AI)
+    end
+end
+
+events.aiESPUpdate = AIPath.ChildAdded:Connect(function(child)
+    if child:IsA("Model") then
+        CreateAIESP(AI)
+    end
+end)
 
 Sense.whitelist = {}
 
@@ -434,14 +535,14 @@ Sense.teamSettings.friendly.chamsOutlineColor = { Color3.new(120/255, 255/255, 1
 task.wait(1)
 Sense.Load()
 
---// UI variables
+--// UI locals
 local keepPeteware = true
 local teleportConnection = false
 local confirmDestroy = false
 
 --// Main UI
 local Window = Rayfield:CreateWindow({
-   Name = "Override | Peteware v1.11.4",
+   Name = "Override | Peteware v1.0.0",
    Icon = 0, 
    LoadingTitle = "Override | Peteware",
    LoadingSubtitle = "Developed by Peteware",
@@ -527,7 +628,9 @@ local Section = Tab:CreateSection("Welcome!")
 ]]
 
 local Paragraph = Tab:CreateParagraph({Title = "What's new and improved", Content = [[
-    [/] Improved script optimisation
+    [+] Added Feature
+    [/] Fixed Feature
+    [-] Removed Feature
     Please consider joining the server and suggesting more features.
     Please report any bugs to our discord server by creating a ticket.]]})
 
@@ -603,6 +706,17 @@ local AimbotKeybindToggle = Tab:CreateKeybind({
 })
 
 local Section = Tab:CreateSection("Combat Configuration")
+
+local AimbotTargetsDropdown = Tab:CreateDropdown({
+   Name = "Aimbot Targets",
+   Options = {"Players", "AI"},
+   CurrentOption = {"Players"},
+   MultipleOptions = true,
+   Flag = "AimbotTargetsDropdown", 
+   Callback = function(Options)
+       aimbotTargets = Options
+   end,
+})
 
 local AimbotPartsDropdown = Tab:CreateDropdown({
    Name = "Aimbot Target Parts",
@@ -711,6 +825,21 @@ local TeamESPToggle = Tab:CreateToggle({
    end,
 })
 
+local AIESPToggle = Tab:CreateToggle({
+   Name = "AI ESP",
+   CurrentValue = false,
+   Flag = "AIESPToggle", 
+   Callback = function(Value)
+       AIESP = Value
+       ModifyAIESP("enabled", AIESP)
+       if AIESP then
+           Notify("AI ESP Enabled. Highlights all teammates in a rendering radius.", 2.5)
+       else
+           Notify("AI ESP Disabled.", 1.5)
+       end
+   end,
+})
+
 local Tab = Window:CreateTab("Misc", "circle-ellipsis")
 
 local Section = Tab:CreateSection("Other Scripts")
@@ -788,7 +917,7 @@ local KeepPetewareToggle = Tab:CreateToggle({
                         game.Loaded:Wait()
                         task.wait(1)
                     end
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Universal/Override.lua"))()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Games/Lone%20Survival/main.lua"))()
                     ]])
                 end
             end)
@@ -833,6 +962,8 @@ local DestroyUIButton = Tab:CreateButton({
 })
 
 Rayfield:LoadConfiguration()
+
+FOVCircle.Visible = true
 
 --// Disconnect Script Features
 function DisconnectScripts()
