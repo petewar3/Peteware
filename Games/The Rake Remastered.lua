@@ -115,7 +115,7 @@ player.CharacterAdded:Connect(SetupCharacter)
 local traps = workspace:WaitForChild("Debris"):WaitForChild("Traps")
 local scraps = workspace:WaitForChild("Filter"):WaitForChild("ScrapSpawns")
 local rake = workspace:FindFirstChild("Rake")
-local flareGun = workspace:FindFirstChild("FlareGunPickUp"):FindFirstChild("FlareGun")
+local flareGun = workspace:FindFirstChild("FlareGunPickUp") and workspace:FindFirstChild("FlareGunPickUp"):FindFirstChild("FlareGun")
 
 --// Events
 local events = {}
@@ -316,14 +316,14 @@ local function ModifyESP(className, key, value)
 end
 
 if typeof(rake) == "Instance" and rake.Parent then
-    local distance = FetchData(rake, "Distance") .. "m"
+    local distance = FetchData(rake, "Distance")
     local health = FetchData(rake, "Health")
-    CreateESP(rake, "Rake", "Rake\nDistance: " .. (distance and math.floor(distance) or "N/A") .. "\nHealth: " .. (health or "N/A"), { Color3.fromRGB(255, 0, 0), 1}, Color3.fromRGB(10, 10, 10))
+    CreateESP(rake, "Rake", "Rake\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A") .. "\nHealth: " .. (health or "N/A"), { Color3.fromRGB(255, 0, 0), 1}, Color3.fromRGB(10, 10, 10))
 end
 
 if typeof(flareGun) == "Instance" and flareGun.Parent then
-    local distance = FetchData(flareGun, "Distance") .. "m"
-    CreateESP(flareGun, "Flare Gun", "Flare Gun\nDistance: " .. (distance and math.floor(distance) or "N/A"), { Color3.fromRGB(0, 200, 255), 1 }, Color3.fromRGB(10, 10, 10))
+    local distance = FetchData(flareGun, "Distance")
+    CreateESP(flareGun, "Flare Gun", "Flare Gun\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 255), 1 }, Color3.fromRGB(10, 10, 10))
 end
 
 local scrapIndex = 1
@@ -332,18 +332,18 @@ for _, scrapSpawn in ipairs(scraps:GetChildren()) do
         for _, scrapModel in ipairs(scrapSpawn:GetChildren()) do
             local scrap = scrapModel:WaitForChild("Scrap")
             
-            local distance = FetchData(scrap, "Distance") .. "m"
+            local distance = FetchData(scrap, "Distance")
             local level = FetchData(scrap, "Level")
-            CreateESP(scrap, "Scrap", "Scrap\nDistance: " .. (distance and math.floor(distance) or "N/A") .. "\nLevel: " .. (level or "N/A"), { Color3.fromRGB(255, 225, 0), 1 }, Color3.fromRGB(15, 15, 15))
+            CreateESP(scrap, "Scrap", "Scrap\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A") .. "\nLevel: " .. (level or "N/A"), { Color3.fromRGB(255, 225, 0), 1 }, Color3.fromRGB(15, 15, 15))
         end
     end
     
     events["scrapESPUpdate" .. scrapIndex] = scrapSpawn.ChildAdded:Connect(function(scrapModel)
         local scrap = scrapModel:WaitForChild("Scrap")
 
-        local distance = FetchData(scrap, "Distance") .. "m"
+        local distance = FetchData(scrap, "Distance")
         local level = FetchData(scrap, "Level")
-        CreateESP(scrap, "Scrap", "Scrap\nDistance: " .. (distance and math.floor(distance) or "N/A") .. "\nLevel: " .. (level or "N/A"), { Color3.fromRGB(255, 225, 0), 1 }, Color3.fromRGB(15, 15, 15))
+        CreateESP(scrap, "Scrap", "Scrap\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A") .. "\nLevel: " .. (level or "N/A"), { Color3.fromRGB(255, 225, 0), 1 }, Color3.fromRGB(15, 15, 15))
     end)
     
     scrapIndex = scrapIndex + 1
@@ -352,25 +352,25 @@ end
 events.rakeSetup = workspace.ChildAdded:Connect(function(child)
     if child.Name == "Rake" then
         rake = child
-        local distance = FetchData(rake, "Distance") .. "m"
+        local distance = FetchData(rake, "Distance")
         local health = FetchData(rake, "Health")
-        CreateESP(rake, "Rake", "Rake\nDistance: " .. (distance and math.floor(distance) or "N/A") .. "\nHealth: " .. (health or "N/A"), { Color3.fromRGB(255, 0, 0), 1}, Color3.fromRGB(10, 10, 10))
+        CreateESP(rake, "Rake", "Rake\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A") .. "\nHealth: " .. (health or "N/A"), { Color3.fromRGB(255, 0, 0), 1}, Color3.fromRGB(10, 10, 10))
     end
 end)
 
 events.flareGunESPUpdate = workspace.ChildAdded:Connect(function(child)
     if child.Name == "FlareGunPickUp" then
         flareGun = child:WaitForChild("FlareGun")
-        local distance = FetchData(flareGun, "Distance") .. "m"
-        CreateESP(flareGun, "Flare Gun", "Flare Gun\nDistance: " .. (distance and math.floor(distance) or "N/A"), { Color3.fromRGB(0, 200, 255), 1 }, Color3.fromRGB(10, 10, 10))
+        local distance = FetchData(flareGun, "Distance")
+        CreateESP(flareGun, "Flare Gun", "Flare Gun\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 255), 1 }, Color3.fromRGB(10, 10, 10))
     end
 end)
 
 events.updateESP = runService.Heartbeat:Connect(function()
     for _, esp in ipairs(ESPData) do
         if esp.instance then
-            local distance = FetchData(esp.instance, "Distance") .. "m"
-            local text = esp.instanceClass .. "\nDistance: " .. (distance and math.floor(distance) or "N/A")
+            local distance = FetchData(esp.instance, "Distance")
+            local text = esp.instanceClass .. "\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A")
 
             if esp.instanceClass == "Rake" then
                 local health = FetchData(esp.instance, "Health")
@@ -657,7 +657,7 @@ local KeepPetewareToggle = Tab:CreateToggle({
                         game.Loaded:Wait()
                         task.wait(1)
                     end
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/PetewareScripts/Peteware-V1/refs/heads/main/Loader"))()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Games/The%20Rake%20Remastered.lua"))()
                     ]])
                 end
             end)
