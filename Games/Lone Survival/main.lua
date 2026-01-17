@@ -481,7 +481,7 @@ local AIESPData = {}
 
 local function CreateAIESP(AIInstance)
     local AIData = {
-        enabled = aiESP,
+        enabled = AIESP,
         text = "AI Bot",
         textColor = { Color3.fromRGB(255, 140, 0), 1 },
         textOutline = true,                     
