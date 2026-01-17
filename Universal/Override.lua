@@ -542,7 +542,7 @@ local confirmDestroy = false
 
 --// Main UI
 local Window = Rayfield:CreateWindow({
-   Name = "Override | Peteware v1.0.0",
+   Name = "Override | Peteware v1.7.1",
    Icon = 0, 
    LoadingTitle = "Override | Peteware",
    LoadingSubtitle = "Developed by Peteware",
@@ -628,9 +628,7 @@ local Section = Tab:CreateSection("Welcome!")
 ]]
 
 local Paragraph = Tab:CreateParagraph({Title = "What's new and improved", Content = [[
-    [+] Added Feature
-    [/] Fixed Feature
-    [-] Removed Feature
+    [/] Fixed Connections
     Please consider joining the server and suggesting more features.
     Please report any bugs to our discord server by creating a ticket.]]})
 
