@@ -542,7 +542,7 @@ local confirmDestroy = false
 
 --// Main UI
 local Window = Rayfield:CreateWindow({
-   Name = "Override | Peteware v1.0.0",
+   Name = "Override | Peteware v1.13.0",
    Icon = 0, 
    LoadingTitle = "Override | Peteware",
    LoadingSubtitle = "Developed by Peteware",
