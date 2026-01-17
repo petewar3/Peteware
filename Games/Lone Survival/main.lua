@@ -833,7 +833,7 @@ local AIESPToggle = Tab:CreateToggle({
        AIESP = Value
        ModifyAIESP("enabled", AIESP)
        if AIESP then
-           Notify("AI ESP Enabled. Highlights all teammates in a rendering radius.", 2.5)
+           Notify("AI ESP Enabled. Highlights all ai bots in a rendering radius.", 2.5)
        else
            Notify("AI ESP Disabled.", 1.5)
        end
