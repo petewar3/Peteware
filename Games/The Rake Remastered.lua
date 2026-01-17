@@ -114,6 +114,7 @@ player.CharacterAdded:Connect(SetupCharacter)
 --// In-Game Variables
 local traps = workspace:WaitForChild("Debris"):WaitForChild("Traps")
 local scraps = workspace:WaitForChild("Filter"):WaitForChild("ScrapSpawns")
+local locations = workspace:WaitForChild("Filter"):WaitForChild("LocationPoints")
 local rake = workspace:FindFirstChild("Rake")
 local flareGun = workspace:FindFirstChild("FlareGunPickUp") and workspace:FindFirstChild("FlareGunPickUp"):FindFirstChild("FlareGun")
 
@@ -124,9 +125,10 @@ local events = {}
 
 --// Character
 local infStamina = false
+local noJumpCooldown = false
 local antiTrap = false
 
-local function ToggleInfStamina(boolean, notify)
+local function ToggleInfStamina(boolean, notify, onPlay)
     if boolean then
         if notify then
             Notify("Infinite Stamina Enabled.", 2)
@@ -136,6 +138,8 @@ local function ToggleInfStamina(boolean, notify)
             if typeof(tbl) == "table" then
                 local max = rawget(tbl, "MAX_STAMINA")
                 if typeof(max) == "number" then
+                    rawset(tbl, "MAX_STAMINA", 100000)
+                    rawset(tbl, "STAMINA_REGEN", rawget(tbl, "MAX_STAMINA"))
                     rawset(tbl, "STAMINA_TAKE", 0)
                     rawset(tbl, "JUMP_STAMINA", 0)
                 end
@@ -146,12 +150,52 @@ local function ToggleInfStamina(boolean, notify)
             Notify("InfiniteStamina Disabled.", 1.5)
         end
         
+        if onPlay then
+            return
+        end
+        
         for _, tbl in ipairs(getgc(true)) do
             if typeof(tbl) == "table" then
                 local max = rawget(tbl, "MAX_STAMINA")
                 if typeof(max) == "number" then
-                    rawset(tbl, "STAMINA_TAKE", 0)
-                    rawset(tbl, "JUMP_STAMINA", 0)
+                    rawset(tbl, "MAX_STAMINA", 100)
+                    rawset(tbl, "STAMINA_REGEN", 0.15)
+                    rawset(tbl, "STAMINA_TAKE", 0.135)
+                    rawset(tbl, "JUMP_STAMINA", 10)
+                end
+            end
+        end
+    end
+end
+
+local function ToggleNoJumpCooldown(boolean, notify, onPlay)
+    if boolean then
+        if notify then
+            Notify("No Jump Cooldown Enabled.", 2)
+        end
+        
+        for _, tbl in ipairs(getgc(true)) do
+            if typeof(tbl) == "table" then
+                local max = rawget(tbl, "JUMP_COOLDOWN")
+                if typeof(max) == "number" then
+                    rawset(tbl, "JUMP_COOLDOWN", 0)
+                end
+            end
+        end
+    else
+        if notify then
+            Notify("No Jump Cooldown Disabled.", 1.5)
+        end
+        
+        if onPlay then
+            return
+        end
+        
+        for _, tbl in ipairs(getgc(true)) do
+            if typeof(tbl) == "table" then
+                local max = rawget(tbl, "JUMP_COOLDOWN")
+                if typeof(max) == "number" then
+                    rawset(tbl, "JUMP_COOLDOWN", 1)
                 end
             end
         end
@@ -204,7 +248,8 @@ end
 
 events.onPlay = playerGui.ChildRemoved:Connect(function(child)
     if child.Name == "IntroGUI" then
-        ToggleInfStamina(infStamina, false)
+        ToggleInfStamina(infStamina, false, true)
+        ToggleNoJumpCooldown(noJumpCooldown, false, true)
     end
 end)
 
@@ -244,7 +289,7 @@ local function FetchData(instance, data)
         local rakeHumanoid = instance:FindFirstChildWhichIsA("Humanoid")
         
         if rakeHumanoid then
-            return tostring(rakeHumanoid.Health) .. "/" .. tostring(rakeHumanoid.MaxHealth)
+            return tostring(math.floor(rakeHumanoid.Health)) .. "/" .. tostring(math.floor(rakeHumanoid.MaxHealth))
         else
             return nil
         end
@@ -267,6 +312,8 @@ end
 local rakeESP = false
 local scrapESP = false
 local flareGunESP = false
+local supplyDropESP = false
+local locationESP = false
 
 local ESPData = {}
 
@@ -284,6 +331,8 @@ local function CreateESP(instance, instanceType, instanceText, instanceTextColou
         instanceEnabled = scrapESP
     elseif instanceType == "Flare Gun" then
         instanceEnabled = flareGunESP
+    elseif instanceType == "Location" then
+        instanceEnabled = locationESP
     end
     
     local data = {
@@ -324,6 +373,13 @@ end
 if typeof(flareGun) == "Instance" and flareGun.Parent then
     local distance = FetchData(flareGun, "Distance")
     CreateESP(flareGun, "Flare Gun", "Flare Gun\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 255), 1 }, Color3.fromRGB(10, 10, 10))
+end
+
+for _, location in ipairs(locations:GetChildren()) do
+    local distance = FetchData(location, "Distance")
+    local name = location.Name:gsub("MSG", "")
+    name = name:gsub("(%l)(%u)", "%1 %2")
+    CreateESP(location, "Location", name .. "\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(235, 235, 235), 1 }, Color3.fromRGB(10, 10, 10))
 end
 
 local scrapIndex = 1
@@ -370,7 +426,14 @@ events.updateESP = runService.Heartbeat:Connect(function()
     for _, esp in ipairs(ESPData) do
         if esp.instance then
             local distance = FetchData(esp.instance, "Distance")
-            local text = esp.instanceClass .. "\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A")
+            local name = esp.instanceClass
+            
+            if name == "Location" then
+                name = esp.instance.Name:gsub("MSG", "")
+                name = name:gsub("(%l)(%u)", "%1 %2")
+            end
+            
+            local text = name .. "\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A")
 
             if esp.instanceClass == "Rake" then
                 local health = FetchData(esp.instance, "Health")
@@ -489,7 +552,12 @@ local Section = Tab:CreateSection("Welcome!")
 local Paragraph = Tab:CreateParagraph({Title = "What's new and improved", Content = [[
     [+] The Rake Remastered Release!
     [+] Rake ESP
+    [+] Scrap ESP
+    [+] Flare Gun ESP
+    [+] Supply Drop ESP
+    [+] Location ESP
     [+] Infinite Stamina
+    [+] Anti-Trap
     
     Please consider joining the server and suggesting more features.
     Please report any bugs to our discord server by creating a ticket.]]})
@@ -550,23 +618,54 @@ local FlareGunESPToggle = Tab:CreateToggle({
    end,
 })
 
+local LocationGunESPToggle = Tab:CreateToggle({
+   Name = "Location ESP",
+   CurrentValue = false,
+   Flag = "LocationESPToggle", 
+   Callback = function(Value)
+       locationESP = Value
+       ModifyESP("Location", "enabled", locationESP)
+       if locationESP then
+           Notify("Location ESP Enabled.", 2)
+       else
+           Notify("Location ESP Disabled.", 1.5)
+       end
+   end,
+})
+
 local Tab = Window:CreateTab("Teleports", "user")
 
 local Tab = Window:CreateTab("Misc", "circle-ellipsis")
 
 local Section = Tab:CreateSection("Character")
 
-local InfStaminaToggle = Tab:CreateToggle({
+local InfStaminaToggle; InfStaminaToggle = Tab:CreateToggle({
    Name = "Infinite Stamina",
    CurrentValue = false,
    Flag = "InfStaminaToggle", 
    Callback = function(Value)
-        infStamina = Value
         if not getgc then
+            InfStaminaToggle:Set(false)
             return Notify("Incompatible exploit (missing getgc)")
         end
-        
+       
+        infStamina = Value
         ToggleInfStamina(infStamina, true)
+   end,
+})
+
+local NoJumpCooldownToggle; NoJumpCooldownToggle = Tab:CreateToggle({
+   Name = "No Jump Cooldown",
+   CurrentValue = false,
+   Flag = "No Jump Cooldown", 
+   Callback = function(Value)
+        if not getgc then
+            NoJumpCooldownToggle:Set(false)
+            return Notify("Incompatible exploit (missing getgc)")
+        end
+       
+        noJumpCooldown = Value
+        ToggleNoJumpCooldown(noJumpCooldown, true)
    end,
 })
 
