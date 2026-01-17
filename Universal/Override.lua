@@ -977,9 +977,6 @@ function DisconnectScripts()
         events[key] = nil
     end
     
-    Sense.teamSettings.enemy.enabled = false
-    Sense.teamSettings.friendly.enabled = false
-    
     Sense.Unload()
     
     FOVCircle:Destroy()
