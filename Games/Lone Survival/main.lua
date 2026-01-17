@@ -628,9 +628,9 @@ local Section = Tab:CreateSection("Welcome!")
 ]]
 
 local Paragraph = Tab:CreateParagraph({Title = "What's new and improved", Content = [[
-    [+] Added Feature
-    [/] Fixed Feature
-    [-] Removed Feature
+    [+] Added AI ESP
+    [+] Added AI Aimbot
+    [/] Fixed Connections
     Please consider joining the server and suggesting more features.
     Please report any bugs to our discord server by creating a ticket.]]})
 
