@@ -818,6 +818,7 @@ function DisconnectScripts()
     
     Sense.Unload()
     ToggleInfStamina(false, false)
+    ToggleNoJumpCooldown(false, false)
     ToggleAntiTrap(false, false)
 end
 
