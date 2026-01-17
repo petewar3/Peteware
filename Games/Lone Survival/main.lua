@@ -922,6 +922,11 @@ local KeepPetewareToggle = Tab:CreateToggle({
                 end
             end)
         else
+            if typeof(events.onTeleport) == "RBXScriptConnection" then
+                events.onTeleport:Disconnect()
+                events.onTeleport = nil
+            end
+            
             Notify("The script wont automatically execute on serverhop or rejoin.")
             keepPeteware = false
             teleportCheck = false
