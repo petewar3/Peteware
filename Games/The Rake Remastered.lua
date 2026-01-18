@@ -363,7 +363,7 @@ events.updateTimer = timer:GetPropertyChangedSignal("Value"):Connect(function()
 end)
 
 events.updatePower = power:GetPropertyChangedSignal("Value"):Connect(function()
-    local currentPower = math.floor(power.Value / 10)
+    local currentPower = math.floor((power.Value / 10) + 0.5)
     powerLabel.Text = string.format("Power: %d%%", math.floor(currentPower + 0.5))
 end)
 
@@ -686,6 +686,7 @@ local Paragraph = Tab:CreateParagraph({Title = "What's new and improved", Conten
     [+] Infinite Stamina
     [+] No Jump Cooldown
     [+] Anti-Trap
+    [+] Supply Crate Bypass
     [+] Time & Power Display
     
     Please consider joining the server and suggesting more features.
