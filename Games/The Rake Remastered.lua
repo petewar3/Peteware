@@ -537,10 +537,8 @@ events.flareGunESPUpdate = workspace.ChildAdded:Connect(function(child)
 end)
 
 events.supplyCrateESPUpdate = supplyCrates.ChildAdded:Connect(function(child)
-    if child.Name == "Box" then
-        local distance = FetchData(child, "Distance")
-        CreateESP(child, "Supply Crate", "Supply Crate\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 100), 1 }, Color3.fromRGB(15, 15, 15))
-    end
+    local distance = FetchData(child, "Distance")
+    CreateESP(child, "Supply Crate", "Supply Crate\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 100), 1 }, Color3.fromRGB(15, 15, 15))
 end)
 
 events.updateESP = runService.Heartbeat:Connect(function()
@@ -814,6 +812,36 @@ local AntiTrapToggle = Tab:CreateToggle({
    Callback = function(Value)
         antiTrap = Value
         ToggleAntiTrap(antiTrap, true)
+   end,
+})
+
+local Divider = Tab:CreateDivider()
+
+local Section = Tab:CreateSection("Exploits")
+
+local SupplyCrateBypassToggle = Tab:CreateToggle({
+   Name = "Supply Crate Bypass",
+   CurrentValue = false,
+   Flag = "SupplyCrateBypassToggle", 
+   Callback = function(Value)
+        if Value then
+            Notify("Supply Crate Bypass Enabled. Opens supply crates without restrictions.")
+            for _, supplyCrate in ipairs(supplyCrates:GetChildren()) do
+                local unlockValue = supplyCrate:WaitForChild("UnlockValue")
+                unlockValue.Value = 100
+            end
+            
+            events.supplyCrateBypassUpdate = supplyCrates.ChildAdded:Connect(function(child)
+                local unlockValue = child:WaitForChild("UnlockValue")
+                unlockValue.Value = 100
+            end)
+        else
+            Notify("Supply Create Bypass Disabled.", 1.5)
+            if typeof(events.supplyCrateBypassUpdate) == "RBXScriptConnection" then
+                events.supplyCrateBypassUpdate:Disconnect()
+                events.supplyCrateBypassUpdate = nil
+            end
+        end
    end,
 })
 
