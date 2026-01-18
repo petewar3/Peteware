@@ -218,7 +218,7 @@ local function ToggleAntiTrap(boolean, notify)
         
         for _, trap in ipairs(traps:GetChildren()) do
             if trap.Name == "RakeTrapModel" then
-                local hitbox = trap:FindFirstChild("Hitbox")
+                local hitbox = trap:WaitForChild("HitBox")
                 if hitbox then
                     hitbox.CanTouch = false
                 end
@@ -227,7 +227,7 @@ local function ToggleAntiTrap(boolean, notify)
         
         events.antiTrapsConn = traps.ChildAdded:Connect(function(child)
             if child.Name == "RakeTrapModel" then
-                local hitbox = child:FindFirstChild("Hitbox")
+                local hitbox = child:WaitForChild("HitBox")
                 if hitbox then
                     hitbox.CanTouch = false
                 end
@@ -240,7 +240,7 @@ local function ToggleAntiTrap(boolean, notify)
         
         for _, trap in ipairs(traps:GetChildren()) do
             if trap.Name == "RakeTrapModel" then
-                local hitbox = trap:FindFirstChild("Hitbox")
+                local hitbox = trap:WaitForChild("HitBox")
                 if hitbox then
                     hitbox.CanTouch = true
                 end
@@ -271,7 +271,7 @@ TimePowerHUD.IgnoreGuiInset = true
 local mainFrame = Instance.new("Frame", TimePowerHUD)
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 360, 0, 46)
-mainFrame.Position = UDim2.new(0.5, 0, 0, 24)
+mainFrame.Position = UDim2.new(0.5, 0, 0, 48)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 mainFrame.BorderSizePixel = 0
@@ -346,6 +346,14 @@ timeShadow.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 
 local uiScale = Instance.new("UIScale", mainFrame)
 uiScale.Scale = 1
+
+if deviceUser ~= "PC" then
+	mainFrame.Size = UDim2.new(0, 300, 0, 40)
+	uiScale.Scale = 0.85
+	layout.Padding = UDim.new(0, 10)
+	padding.PaddingLeft = UDim.new(0, 12)
+	padding.PaddingRight = UDim.new(0, 12)
+end
 
 events.updateTimer = timer:GetPropertyChangedSignal("Value"):Connect(function()
     local currentSeconds = timer.Value
