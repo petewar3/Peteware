@@ -18,6 +18,10 @@ end
 httprequest = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
 queueteleport = (syn and syn.queue_on_teleport) or queue_on_teleport or (fluxus and fluxus.queue_on_teleport)
 setclip = setclipboard or (syn and syn.setclipboard) or (Clipboard and Clipboard.set)
+gethui = gethui or function()
+    return game:GetService("CoreGui")
+end
+
 
 --// Services & Setup
 local players = game:GetService("Players")
@@ -113,10 +117,14 @@ player.CharacterAdded:Connect(SetupCharacter)
 
 --// In-Game Variables
 local traps = workspace:WaitForChild("Debris"):WaitForChild("Traps")
+local supplyCrates = workspace:WaitForChild("Debris"):WaitForChild("SupplyCrates")
 local scraps = workspace:WaitForChild("Filter"):WaitForChild("ScrapSpawns")
 local locations = workspace:WaitForChild("Filter"):WaitForChild("LocationPoints")
 local rake = workspace:FindFirstChild("Rake")
 local flareGun = workspace:FindFirstChild("FlareGunPickUp") and workspace:FindFirstChild("FlareGunPickUp"):FindFirstChild("FlareGun")
+
+local timer = replicatedStorage:WaitForChild("Timer")
+local power = replicatedStorage:WaitForChild("PowerValues"):WaitForChild("PowerLevel")
 
 --// Events
 local events = {}
@@ -138,7 +146,7 @@ local function ToggleInfStamina(boolean, notify, onPlay)
             if typeof(tbl) == "table" then
                 local max = rawget(tbl, "MAX_STAMINA")
                 if typeof(max) == "number" then
-                    rawset(tbl, "MAX_STAMINA", 100000)
+                    rawset(tbl, "MAX_STAMINA", math.huge)
                     rawset(tbl, "STAMINA_REGEN", rawget(tbl, "MAX_STAMINA"))
                     rawset(tbl, "STAMINA_TAKE", 0)
                     rawset(tbl, "JUMP_STAMINA", 0)
@@ -253,6 +261,104 @@ events.onPlay = playerGui.ChildRemoved:Connect(function(child)
     end
 end)
 
+--// Miscellaneous
+local timePowerDisplay = false
+
+local TimePowerHUD = Instance.new("ScreenGui", gethui())
+TimePowerHUD.Name = "TimePowerHUD"
+TimePowerHUD.IgnoreGuiInset = true
+
+local mainFrame = Instance.new("Frame", TimePowerHUD)
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 360, 0, 46)
+mainFrame.Position = UDim2.new(0.5, 0, 0, 24)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = timePowerDisplay
+
+local mainCorner = Instance.new("UICorner", mainFrame)
+mainCorner.CornerRadius = UDim.new(0, 10)
+
+local mainStroke = Instance.new("UIStroke", mainFrame)
+mainStroke.Thickness = 1.5
+mainStroke.Color = Color3.fromRGB(255, 140, 0)
+mainStroke.Transparency = 0
+mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+local padding = Instance.new("UIPadding", mainFrame)
+padding.PaddingLeft = UDim.new(0, 16)
+padding.PaddingRight = UDim.new(0, 16)
+
+local layout = Instance.new("UIListLayout", mainFrame)
+layout.FillDirection = Enum.FillDirection.Horizontal
+layout.Padding = UDim.new(0, 16)
+layout.VerticalAlignment = Enum.VerticalAlignment.Center
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local powerLabel = Instance.new("TextLabel", mainFrame)
+powerLabel.Name = "PowerLabel"
+powerLabel.BackgroundTransparency = 1
+powerLabel.Size = UDim2.new(0, 140, 1, 0)
+powerLabel.LayoutOrder = 1
+powerLabel.Font = Enum.Font.GothamMedium
+powerLabel.TextScaled = true
+powerLabel.TextXAlignment = Enum.TextXAlignment.Left
+powerLabel.TextYAlignment = Enum.TextYAlignment.Center
+powerLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
+powerLabel.Text = "Power: 0%"
+
+local powerShadow = Instance.new("UIStroke", powerLabel)
+powerShadow.Thickness = 0.75
+powerShadow.Color = Color3.fromRGB(10, 10, 10)
+powerShadow.Transparency = 0.7
+powerShadow.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+
+local separator = Instance.new("Frame", mainFrame)
+separator.Name = "Separator"
+separator.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+separator.BackgroundTransparency = 0.35
+separator.BorderSizePixel = 0
+separator.Size = UDim2.new(0, 1, 0.65, 0)
+separator.LayoutOrder = 2
+
+local sepCorner = Instance.new("UICorner", seperator)
+sepCorner.CornerRadius = UDim.new(1, 0)
+
+local timeLabel = Instance.new("TextLabel", mainFrame)
+timeLabel.Name = "TimeLabel"
+timeLabel.BackgroundTransparency = 1
+timeLabel.Size = UDim2.new(0, 140, 1, 0)
+timeLabel.LayoutOrder = 3
+timeLabel.Font = Enum.Font.GothamMedium
+timeLabel.TextScaled = true
+timeLabel.TextXAlignment = Enum.TextXAlignment.Right
+timeLabel.TextYAlignment = Enum.TextYAlignment.Center
+timeLabel.TextColor3 = Color3.fromRGB(235, 235, 235)
+timeLabel.Text = "Time: 00:00"
+
+local timeShadow = Instance.new("UIStroke", timeLabel)
+timeShadow.Thickness = 0.75
+timeShadow.Color = Color3.fromRGB(10, 10, 10)
+timeShadow.Transparency = 0.7
+timeShadow.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+
+local uiScale = Instance.new("UIScale", mainFrame)
+uiScale.Scale = 1
+
+events.updateTimer = timer:GetPropertyChangedSignal("Value"):Connect(function()
+    local currentSeconds = timer.Value
+    local minutes = math.floor(currentSeconds / 60)
+    local seconds = currentSeconds % 60
+    timeLabel.Text = string.format("Time: %d:%02d", minutes, seconds)
+end)
+
+events.updatePower = power:GetPropertyChangedSignal("Value"):Connect(function()
+    local currentPower = math.floor(power.Value / 10)
+    powerLabel.Text = string.format("Power: %d%%", math.floor(currentPower + 0.5))
+end)
+
 --// Visuals
 local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Other/Sense.lua'))()
 
@@ -314,6 +420,7 @@ local scrapESP = false
 local flareGunESP = false
 local supplyDropESP = false
 local locationESP = false
+local supplyCrateESP = false
 
 local ESPData = {}
 
@@ -333,6 +440,8 @@ local function CreateESP(instance, instanceType, instanceText, instanceTextColou
         instanceEnabled = flareGunESP
     elseif instanceType == "Location" then
         instanceEnabled = locationESP
+    elseif instanceType == "Supply Crate" then
+        instanceEnabled = supplyCrateESP
     end
     
     local data = {
@@ -372,7 +481,7 @@ end
 
 if typeof(flareGun) == "Instance" and flareGun.Parent then
     local distance = FetchData(flareGun, "Distance")
-    CreateESP(flareGun, "Flare Gun", "Flare Gun\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 255), 1 }, Color3.fromRGB(10, 10, 10))
+    CreateESP(flareGun, "Flare Gun", "Flare Gun\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 255), 1 }, Color3.fromRGB(15, 15, 15))
 end
 
 for _, location in ipairs(locations:GetChildren()) do
@@ -380,6 +489,11 @@ for _, location in ipairs(locations:GetChildren()) do
     local name = location.Name:gsub("MSG", "")
     name = name:gsub("(%l)(%u)", "%1 %2")
     CreateESP(location, "Location", name .. "\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(235, 235, 235), 1 }, Color3.fromRGB(10, 10, 10))
+end
+
+for _, supplyCrate in ipairs(supplyCrates:GetChildren()) do
+    local distance = FetchData(supplyCrate, "Distance")
+    CreateESP(supplyCrate, "Supply Crate", "Supply Crate\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 100), 1 }, Color3.fromRGB(15, 15, 15))
 end
 
 local scrapIndex = 1
@@ -418,7 +532,14 @@ events.flareGunESPUpdate = workspace.ChildAdded:Connect(function(child)
     if child.Name == "FlareGunPickUp" then
         flareGun = child:WaitForChild("FlareGun")
         local distance = FetchData(flareGun, "Distance")
-        CreateESP(flareGun, "Flare Gun", "Flare Gun\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 255), 1 }, Color3.fromRGB(10, 10, 10))
+        CreateESP(flareGun, "Flare Gun", "Flare Gun\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 255), 1 }, Color3.fromRGB(15, 15, 15))
+    end
+end)
+
+events.supplyCrateESPUpdate = supplyCrates.ChildAdded:Connect(function(child)
+    if child.Name == "Box" then
+        local distance = FetchData(child, "Distance")
+        CreateESP(child, "Supply Crate", "Supply Crate\nDistance: " .. (distance and tostring(math.floor(distance)) .. "m" or "N/A"), { Color3.fromRGB(0, 200, 100), 1 }, Color3.fromRGB(15, 15, 15))
     end
 end)
 
@@ -554,10 +675,12 @@ local Paragraph = Tab:CreateParagraph({Title = "What's new and improved", Conten
     [+] Rake ESP
     [+] Scrap ESP
     [+] Flare Gun ESP
-    [+] Supply Drop ESP
     [+] Location ESP
+    [+] Supply Crate ESP
     [+] Infinite Stamina
+    [+] No Jump Cooldown
     [+] Anti-Trap
+    [+] Time & Power Display
     
     Please consider joining the server and suggesting more features.
     Please report any bugs to our discord server by creating a ticket.]]})
@@ -633,6 +756,21 @@ local LocationGunESPToggle = Tab:CreateToggle({
    end,
 })
 
+local SupplyCrateESPToggle = Tab:CreateToggle({
+   Name = "Supply Crate ESP",
+   CurrentValue = false,
+   Flag = "SupplyCrateESPToggle", 
+   Callback = function(Value)
+       supplyCrateESP = Value
+       ModifyESP("Supply Crate", "enabled", supplyCrateESP)
+       if supplyCrateESP then
+           Notify("Supply Crate ESP Enabled.", 2)
+       else
+           Notify("Supply Crate ESP Disabled.", 1.5)
+       end
+   end,
+})
+
 local Tab = Window:CreateTab("Teleports", "user")
 
 local Tab = Window:CreateTab("Misc", "circle-ellipsis")
@@ -676,6 +814,20 @@ local AntiTrapToggle = Tab:CreateToggle({
    Callback = function(Value)
         antiTrap = Value
         ToggleAntiTrap(antiTrap, true)
+   end,
+})
+
+local Divider = Tab:CreateDivider()
+
+local Section = Tab:CreateSection("HUD")
+
+local TimePowerDisplayToggle = Tab:CreateToggle({
+   Name = "Time & Power Display",
+   CurrentValue = false,
+   Flag = "TimePowerDisplayToggle", 
+   Callback = function(Value)
+        timePowerDisplay = Value
+        mainFrame.Visible = timePowerDisplay
    end,
 })
 
@@ -820,6 +972,8 @@ function DisconnectScripts()
     ToggleInfStamina(false, false)
     ToggleNoJumpCooldown(false, false)
     ToggleAntiTrap(false, false)
+    
+    TimePowerHUD:Destroy()
 end
 
 --[[
