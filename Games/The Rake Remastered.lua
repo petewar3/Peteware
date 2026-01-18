@@ -271,7 +271,7 @@ TimePowerHUD.IgnoreGuiInset = true
 local mainFrame = Instance.new("Frame", TimePowerHUD)
 mainFrame.Name = "MainFrame"
 mainFrame.Size = UDim2.new(0, 360, 0, 46)
-mainFrame.Position = UDim2.new(0.5, 0, 0, 48)
+mainFrame.Position = UDim2.new(0.5, 0, 0, 60)
 mainFrame.AnchorPoint = Vector2.new(0.5, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 mainFrame.BorderSizePixel = 0
@@ -348,6 +348,7 @@ local uiScale = Instance.new("UIScale", mainFrame)
 uiScale.Scale = 1
 
 if deviceUser ~= "PC" then
+    mainFrame.Position = UDim2.new(0.5, 0, 0, 60)
 	mainFrame.Size = UDim2.new(0, 300, 0, 40)
 	uiScale.Scale = 0.85
 	layout.Padding = UDim.new(0, 10)
