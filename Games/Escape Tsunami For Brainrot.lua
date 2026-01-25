@@ -33,6 +33,7 @@ local teleport_service = cloneref(game:GetService("TeleportService"))
 local http_service = cloneref(game:GetService("HttpService")) 
 local workspace = cloneref(game:GetService("Workspace"))
 local uis = cloneref(game:GetService("UserInputService"))
+local tween_service = cloneref(game:GetService("TweenService"))
 local replicated_storage = cloneref(game:GetService("ReplicatedStorage"))
 local run_service = cloneref(game:GetService("RunService"))
 local virtual_user = cloneref(game:GetService("VirtualUser"))
@@ -267,6 +268,7 @@ local auto_collect_money = true
 --// Teleportation
 local gaps_folder = cloneref(workspace:WaitForChild("Misc"):WaitForChild("Gaps"))
 
+--// Gaps Function Utilities
 local function FetchGaps()
     return gaps_folder:GetChildren()
 end
@@ -277,13 +279,14 @@ local function FetchClosestHighGap()
     
     local gaps = FetchGaps()
     for _, gap in pairs(gaps) do
-        local gap_root = cloneref(gap:GetChildren()[2])
-        local distance = (hrp.Position - gap_root.Position).Magnitude
-        local x_diff = gap_root.Position.X - hrp.Position.X
-        if x_diff < 0 and math.abs(distance) > 10 then
-            if distance < shortest_distance then
-                closest_gap = gap_root
-                shortest_distance = distance
+        for _, part in pairs(gap:GetChildren()) do
+            if math.round(part.Size.Y) == 152 then
+                local distance = (hrp.Position - part.Position).Magnitude
+                local x_diff = part.Position.X - hrp.Position.X
+                if x_diff > 5 and distance < shortest_distance and distance > 10 then
+                    closest_gap = part
+                    shortest_distance = distance
+                end
             end
         end
     end
@@ -297,18 +300,55 @@ local function FetchClosestLowGap()
     
     local gaps = FetchGaps()
     for _, gap in pairs(gaps) do
-        local gap_root = cloneref(gap:GetChildren()[2])
-        local distance = (hrp.Position - gap_root.Position).Magnitude
-        local x_diff = gap_root.Position.X - hrp.Position.X
-        if x_diff > 0 and math.abs(distance) > 10 then
-            if distance < shortest_distance then
-                closest_gap = gap_root
-                shortest_distance = distance
+        for _, part in pairs(gap:GetChildren()) do
+            if math.round(part.Size.Y) == 152 then
+                local distance = (hrp.Position - part.Position).Magnitude
+                local x_diff = part.Position.X - hrp.Position.X
+                if x_diff < 5 and distance < shortest_distance and distance > 10 then
+                    closest_gap = part
+                    shortest_distance = distance
+                end
             end
         end
     end
     
     return closest_gap
+end
+
+local function FastTeleport(target_pos)
+    local speed = math.floor(player:GetAttribute("CurrentSpeed"))
+
+    local start_pos = hrp.Position
+    local distance = (target_pos - start_pos).Magnitude
+    local duration = distance / (speed * 5)
+
+    local elapsed = 0
+    local hrp_anchor_state = hrp.Anchored
+    hrp.Anchored = false
+
+    local heartbeat_conn; heartbeat_conn = run_service.Heartbeat:Connect(function(delta)
+        if not (hrp and char and humanoid and humanoid.Parent) then
+            heartbeat_conn:Disconnect()
+            heartbeat_conn = nil
+            return
+        end
+
+        elapsed = elapsed + delta
+        local alpha = math.clamp(elapsed / duration, 0, 1)
+
+        if alpha >= 1 then
+            hrp.CFrame = CFrame.new(target_pos)
+            hrp.Anchored = hrp_anchor_state
+            heartbeat_conn:Disconnect()
+            heartbeat_conn = nil
+            return
+        end
+
+        local desired_pos = start_pos:Lerp(target_pos, alpha)
+        local move_delta = desired_pos - hrp.Position
+
+        char:TranslateBy(move_delta)
+    end)
 end
 
 --// Visuals
@@ -511,20 +551,30 @@ local auto_collect_money_toggle = Tab:CreateToggle({
 
 local Tab = Window:CreateTab("Teleportation", "user")
 
-local teleport_one_gap_up = Tab:CreateButton({
-   Name = "Teleport One Gap Up",
-   Callback = function()
-        local gap_root = FetchClosestHighGap()
-        hrp.Position = gap_root.Position + Vector3.new(0, 5, 0)
-   end,
-})
+local Section = Tab:CreateSection("Gaps")
 
 local teleport_one_gap_up = Tab:CreateButton({
-   Name = "Teleport One Gap Down",
-   Callback = function()
+    Name = "Teleport One Gap Up",
+    Callback = function()
+        local gap_root = FetchClosestHighGap()
+        if typeof(gap_root) ~= "Instance" then
+            return Notify("The Highest Gap has already been reached!")
+        end
+
+        FastTeleport(gap_root.Position + Vector3.new(0, 5, 0))
+    end,
+})
+
+local teleport_one_gap_down = Tab:CreateButton({
+    Name = "Teleport One Gap Down",
+    Callback = function()
         local gap_root = FetchClosestLowGap()
-        hrp.Position = gap_root.Position + Vector3.new(0, 5, 0)
-   end,
+        if typeof(gap_root) ~= "Instance" then
+            return Notify("The Lowest Gap has already been reached!")
+        end
+
+        FastTeleport(gap_root.Position + Vector3.new(0, 5, 0))
+    end,
 })
 
 local Tab = Window:CreateTab("Misc", "circle-ellipsis")
