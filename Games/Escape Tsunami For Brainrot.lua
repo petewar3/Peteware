@@ -675,7 +675,7 @@ local keep_peteware_toggle = Tab:CreateToggle({
                         game.Loaded:Wait()
                         task.wait(1)
                     end
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/PetewareScripts/Peteware-V1/refs/heads/main/Loader"))()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Games/Escape%20Tsunami%20For%20Brainrot.lua"))()
                     ]])
                 end
             end)
