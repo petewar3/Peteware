@@ -31,6 +31,7 @@ local players = cloneref(game:GetService("Players"))
 local player = cloneref(players.LocalPlayer)
 local teleport_service = cloneref(game:GetService("TeleportService"))
 local http_service = cloneref(game:GetService("HttpService")) 
+local workspace = cloneref(game:GetService("Workspace"))
 local uis = cloneref(game:GetService("UserInputService"))
 local replicated_storage = cloneref(game:GetService("ReplicatedStorage"))
 local run_service = cloneref(game:GetService("RunService"))
@@ -204,11 +205,11 @@ local events = {}
 local threads = {}
 
 --// Automation
-local bases = workspace:WaitForChild("Bases")
+local bases_folder = cloneref(workspace:WaitForChild("Bases"))
 
 --// Base Finder
 local base
-for _, plot in pairs(bases:GetChildren()) do
+for _, plot in pairs(bases_folder:GetChildren()) do
     if plot:GetAttribute("Holder") == player.UserId then
         base = plot
         break
@@ -248,10 +249,10 @@ local function FetchOpenSlots()
     return open_slots
 end
 
+--// Collect Money
 local plot_action = cloneref(replicated_storage:WaitForChild("Packages"):WaitForChild("Net"):WaitForChild("RF/Plot.PlotAction"))
 
 local function CollectMoney(slot_index)
-    print(base.Name)
     local args = {
 	    "Collect Money",
 	    base.Name,
@@ -262,6 +263,53 @@ local function CollectMoney(slot_index)
 end
 
 local auto_collect_money = true
+
+--// Teleportation
+local gaps_folder = cloneref(workspace:WaitForChild("Misc"):WaitForChild("Gaps"))
+
+local function FetchGaps()
+    return gaps_folder:GetChildren()
+end
+
+local function FetchClosestHighGap()
+    local closest_gap = nil
+    local shortest_distance = math.huge
+    
+    local gaps = FetchGaps()
+    for _, gap in pairs(gaps) do
+        local gap_root = cloneref(gap:GetChildren()[2])
+        local distance = (hrp.Position - gap_root.Position).Magnitude
+        local x_diff = gap_root.Position.X - hrp.Position.X
+        if x_diff < 0 and math.abs(distance) > 10 then
+            if distance < shortest_distance then
+                closest_gap = gap_root
+                shortest_distance = distance
+            end
+        end
+    end
+    
+    return closest_gap
+end
+
+local function FetchClosestLowGap()
+    local closest_gap = nil
+    local shortest_distance = math.huge
+    
+    local gaps = FetchGaps()
+    for _, gap in pairs(gaps) do
+        local gap_root = cloneref(gap:GetChildren()[2])
+        local distance = (hrp.Position - gap_root.Position).Magnitude
+        local x_diff = gap_root.Position.X - hrp.Position.X
+        if x_diff > 0 and math.abs(distance) > 10 then
+            if distance < shortest_distance then
+                closest_gap = gap_root
+                shortest_distance = distance
+            end
+        end
+    end
+    
+    return closest_gap
+end
 
 --// Visuals
 local Sense = loadstring(game:HttpGet('https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Other/Sense.lua'))()
@@ -446,9 +494,7 @@ local auto_collect_money_toggle = Tab:CreateToggle({
             
             task.spawn(function()
                 while auto_collect_money do
-                    print("wow")
                     local slots = FetchTakenSlots()
-                    print(#slots)
                     for _, slot in ipairs(slots) do
                         local slot_index = slot.Name:gsub("Slot", "")
                         CollectMoney(slot_index)
@@ -463,7 +509,23 @@ local auto_collect_money_toggle = Tab:CreateToggle({
    end,
 })
 
-local Tab = Window:CreateTab("Teleports", "user")
+local Tab = Window:CreateTab("Teleportation", "user")
+
+local teleport_one_gap_up = Tab:CreateButton({
+   Name = "Teleport One Gap Up",
+   Callback = function()
+        local gap_root = FetchClosestHighGap()
+        hrp.Position = gap_root.Position + Vector3.new(0, 5, 0)
+   end,
+})
+
+local teleport_one_gap_up = Tab:CreateButton({
+   Name = "Teleport One Gap Down",
+   Callback = function()
+        local gap_root = FetchClosestLowGap()
+        hrp.Position = gap_root.Position + Vector3.new(0, 5, 0)
+   end,
+})
 
 local Tab = Window:CreateTab("Misc", "circle-ellipsis")
 
@@ -723,48 +785,67 @@ local destroy_ui_button = Tab:CreateButton({
     end,
 })
 
---// Static Events
+--// Character Events
+local function ApplyHumanoidEvents()
+    if typeof(events.stats_conn_updater_ws) == "RBXScriptConnection" then
+        events.stats_conn_updater_ws:Disconnect()
+        events.stats_conn_updater_ws = nil
+    end
+    
+    if typeof(events.stats_conn_updater_ujp) == "RBXScriptConnection" then
+        events.stats_conn_updater_ujp:Disconnect()
+        events.stats_conn_updater_ujp = nil
+    end
+    
+    if typeof(events.stats_conn_updater_jp) == "RBXScriptConnection" then
+        events.stats_conn_updater_jp:Disconnect()
+        events.stats_conn_updater_jp = nil
+    end
+    
+    events.stats_conn_updater_ws = humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+        if not custom_ws then
+            ws_slider:Set(humanoid.WalkSpeed)
+            return
+        end
+
+        if humanoid.WalkSpeed ~= current_ws then
+            humanoid.WalkSpeed = current_ws
+        end
+
+        ws_slider:Set(humanoid.WalkSpeed)
+    end)
+
+    events.stats_conn_updater_ujp = humanoid:GetPropertyChangedSignal("UseJumpPower"):Connect(function()
+        if not custom_jp then
+            return
+        end
+
+        if not humanoid.UseJumpPower then
+            humanoid.UseJumpPower = true
+        end
+    end)
+
+    events.stats_conn_updater_jp = humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
+        if not custom_jp then
+            jp_slider:Set(humanoid.JumpPower)
+            return
+        end
+
+        if humanoid.JumpPower ~= current_jp then
+            humanoid.JumpPower = current_jp
+        end
+
+        jp_slider:Set(humanoid.JumpPower)
+    end)
+end
+
+ApplyHumanoidEvents()
 events.stats_conn = player.CharacterAdded:Connect(function()
     task.wait(1)
+    ApplyHumanoidEvents()
     humanoid.WalkSpeed = current_ws
     humanoid.UseJumpPower = (custom_jp and true) or default_ujp
     humanoid.JumpPower = current_jp
-end)
-
-events.stats_conn_updater_ws = humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-    if not custom_ws then
-        ws_slider:Set(humanoid.WalkSpeed)
-        return
-    end
-
-    if humanoid.WalkSpeed ~= current_ws then
-        humanoid.WalkSpeed = current_ws
-    end
-
-    ws_slider:Set(humanoid.WalkSpeed)
-end)
-
-events.stats_conn_updater_ujp = humanoid:GetPropertyChangedSignal("UseJumpPower"):Connect(function()
-    if not custom_jp then
-        return
-    end
-
-    if not humanoid.UseJumpPower then
-        humanoid.UseJumpPower = true
-    end
-end)
-
-events.stats_conn_updater_jp = humanoid:GetPropertyChangedSignal("JumpPower"):Connect(function()
-    if not custom_jp then
-        jp_slider:Set(humanoid.JumpPower)
-        return
-    end
-
-    if humanoid.JumpPower ~= current_jp then
-        humanoid.JumpPower = current_jp
-    end
-
-    jp_slider:Set(humanoid.JumpPower)
 end)
 
 --// Disconnect Script Features
