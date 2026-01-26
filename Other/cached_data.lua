@@ -22,7 +22,7 @@ local discord_invite_code = "/GSpmjtMSVA"
 local discord_invite_url = "https://discord.com/invite/" .. discord_invite_code
 
 local cached_data; cached_data = {
-    main_loader_url = "https://raw.githubusercontent.com/Petewar3/Peteware/refs/heads/main/Loader.lua",
+    main_loader_url = "https://raw.githubusercontent.com/petewar3/Peteware/refs/heads/main/Loader.lua",
     user_device = user_device,
     discord_invite_code = "/GSpmjtMSVA",
     discord_invite_url = discord_invite_url,
