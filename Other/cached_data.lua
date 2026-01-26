@@ -28,7 +28,6 @@ local cached_data; cached_data = {
     discord_invite_url = discord_invite_url,
     JoinDiscord = function(self)
         setclip(self.discord_invite_url)
-        Notify("Discord invite copied to clipboard.")
 
         if httprequest and self.user_device == "PC" then
             pcall(function()
