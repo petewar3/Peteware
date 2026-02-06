@@ -18,7 +18,7 @@ elseif uis.MouseEnabled and uis.KeyboardEnabled and not uis.TouchEnabled then
 end
 
 --// Fixed Values
-local discord_invite_code = "rm9SQaNJ5m"
+local discord_invite_code = "AutHEkAmn4"
 local discord_invite_url = "https://discord.com/invite/" .. discord_invite_code
 
 local cached_data; cached_data = {
