@@ -5589,7 +5589,8 @@ return ((function(...)
     local old; old = hookfunction(L, newcclosure(function(...)
         local result = old(...)
         local oldd; oldd = hookfunction(result, function(...)
-            print(select(1, ...)) -- printing here?
+            DumpTable(...) -- printing here?
+            return oldd(...)
         end)
         return result
     end))
